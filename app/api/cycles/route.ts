@@ -3,6 +3,7 @@ import { auth } from '../auth/[...nextauth]/route';
 import connectDB from '@/lib/mongodb';
 import AppraisalCycle from '@/lib/models/AppraisalCycle';
 import { z } from 'zod';
+import { notifyCycleStatusChange } from '@/lib/utils/notifications';
 
 const competencySchema = z.object({
   name: z.string().min(1),
@@ -125,6 +126,11 @@ export async function PUT(req: NextRequest) {
 
     if (!cycle) {
       return NextResponse.json({ error: 'Cycle not found' }, { status: 404 });
+    }
+
+    // Send notifications if status changed
+    if (validatedData.status) {
+      await notifyCycleStatusChange(cycle._id.toString(), validatedData.status);
     }
 
     return NextResponse.json(cycle);

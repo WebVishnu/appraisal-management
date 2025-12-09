@@ -215,10 +215,12 @@ export default function UserManagementClient() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-white">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingUser ? 'Edit User' : 'Create New User'}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900 dark:text-[hsl(var(--foreground))]">
+              {editingUser ? 'Edit User' : 'Create New User'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               {editingUser
                 ? 'Update user information below.'
                 : 'Fill in the details to create a new HR or Manager user.'}

@@ -29,6 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import Link from 'next/link';
+import { Eye } from 'lucide-react';
+import { StatusBadge } from '@/components/shared/status-badge';
 
 interface Employee {
   _id: string;
@@ -184,7 +187,24 @@ export default function EmployeeManagementClient() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse mt-2"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-100 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -222,25 +242,30 @@ export default function EmployeeManagementClient() {
                 employees.map((employee) => (
                   <TableRow key={employee._id}>
                     <TableCell>{employee.employeeId}</TableCell>
-                    <TableCell>{employee.name}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/dashboard/hr/employees/${employee._id}`}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {employee.name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>{employee.role}</TableCell>
                     <TableCell>
                       {employee.managerId ? employee.managerId.name : '-'}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          employee.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {employee.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                      <StatusBadge status={employee.isActive ? 'active' : 'inactive'} />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/dashboard/hr/employees/${employee._id}`}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Link>
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEdit(employee)}>
                           Edit
                         </Button>
@@ -269,10 +294,12 @@ export default function EmployeeManagementClient() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl bg-white">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Create New Employee'}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900 dark:text-[hsl(var(--foreground))]">
+              {editingEmployee ? 'Edit Employee' : 'Create New Employee'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               {editingEmployee
                 ? 'Update employee information below.'
                 : 'Fill in the details to create a new employee.'}

@@ -10,11 +10,7 @@ export default async function ManagerReviewsPage() {
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Team Reviews</h1>
-        <p className="text-gray-600 mt-2">Review and evaluate your team members</p>
-      </div>
+    <div>
       <ManagerReviewsClient />
     </div>
   );

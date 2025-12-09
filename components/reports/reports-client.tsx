@@ -28,6 +28,20 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import { Download } from 'lucide-react';
 
 interface Cycle {
   _id: string;
@@ -174,12 +188,108 @@ export default function ReportsClient() {
     setFilters({ cycleId: 'all', managerId: 'all', employeeId: 'all' });
   };
 
+  const exportToCSV = () => {
+    if (reports.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    const headers = ['Cycle', 'Employee', 'Email', 'Manager', 'Manager Email', 'Final Rating', 'Status', 'Submitted'];
+    const rows = reports.map((report) => [
+      report.cycleId.name,
+      report.employeeId.name,
+      report.employeeId.email,
+      report.managerId?.name || 'N/A',
+      report.managerId?.email || 'N/A',
+      report.finalRating || 'Pending',
+      report.status,
+      report.submittedAt ? new Date(report.submittedAt).toLocaleDateString() : 'N/A',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `appraisal-reports-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Report exported successfully');
+  };
+
+  // Prepare chart data
+  const ratingDistribution = reports.reduce((acc, report) => {
+    if (report.finalRating && !report.isIncomplete) {
+      const match = report.finalRating.match(/(\d+\.?\d*)/);
+      if (match) {
+        const rating = Math.round(parseFloat(match[1]));
+        acc[rating] = (acc[rating] || 0) + 1;
+      }
+    }
+    return acc;
+  }, {} as Record<number, number>);
+
+  const chartData = Object.entries(ratingDistribution)
+    .map(([rating, count]) => ({
+      rating: `Rating ${rating}`,
+      count,
+    }))
+    .sort((a, b) => parseInt(a.rating.split(' ')[1]) - parseInt(b.rating.split(' ')[1]));
+
+  const statusDistribution = reports.reduce((acc, report) => {
+    acc[report.status] = (acc[report.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusData = Object.entries(statusDistribution).map(([status, count]) => ({
+    status: status === 'submitted' ? 'Submitted' : 'Draft',
+    count,
+  }));
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
+
   if (loading && reports.length === 0) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse mt-2"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
     <div>
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Appraisal Reports</h2>
+          <p className="text-gray-600 dark:text-gray-400">View and analyze appraisal data</p>
+        </div>
+        {reports.length > 0 && (
+          <Button onClick={exportToCSV} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        )}
+      </div>
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
@@ -284,23 +394,23 @@ export default function ReportsClient() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{report.employeeId.name}</div>
-                        <div className="text-sm text-gray-500">{report.employeeId.email}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{report.employeeId.email}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {report.managerId && report.managerId.name ? (
                         <div>
-                          <div className="font-medium">{report.managerId.name}</div>
-                          <div className="text-sm text-gray-500">{report.managerId.email}</div>
+                          <div className="font-medium dark:text-gray-100">{report.managerId.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{report.managerId.email}</div>
                         </div>
                       ) : (
-                        <span className="text-gray-400 italic">No manager review</span>
+                        <span className="text-gray-400 dark:text-gray-500 italic">No manager review</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="font-medium">
+                      <span className="font-medium dark:text-gray-100">
                         {report.isIncomplete ? (
-                          <span className="text-gray-400 italic">Pending</span>
+                          <span className="text-gray-400 dark:text-gray-500 italic">Pending</span>
                         ) : (
                           report.finalRating
                         )}
@@ -339,11 +449,75 @@ export default function ReportsClient() {
         </CardContent>
       </Card>
 
+      {/* Charts */}
+      {reports.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rating Distribution</CardTitle>
+              <CardDescription>Distribution of final ratings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="rating" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">No rating data available</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Status Distribution</CardTitle>
+              <CardDescription>Submitted vs Draft reports</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={statusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(props: any) => {
+                        const percent = props.percent || 0;
+                        const name = props.name || props.status || '';
+                        return `${name}: ${(percent * 100).toFixed(0)}%`;
+                      }}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                    >
+                      {statusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">No status data available</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Report Details</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-gray-900 dark:text-[hsl(var(--foreground))]">Report Details</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               Detailed view of the appraisal report
             </DialogDescription>
           </DialogHeader>
@@ -429,25 +603,25 @@ export default function ReportsClient() {
               {!selectedReport.isIncomplete && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500 mb-2 block">Manager Ratings</Label>
+                    <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 block">Manager Ratings</Label>
                     <div className="space-y-2">
                       {Object.keys(selectedReport.ratings).length > 0 ? (
                         Object.entries(selectedReport.ratings).map(([key, value]) => (
-                          <div key={key} className="flex justify-between border-b pb-2">
-                            <span className="font-medium">{key}</span>
-                            <span>{value}</span>
+                          <div key={key} className="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                            <span className="font-medium dark:text-gray-100">{key}</span>
+                            <span className="dark:text-gray-300">{value}</span>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-gray-400 italic">No ratings provided</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 italic">No ratings provided</p>
                       )}
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 block">
                       Manager Comments
                     </Label>
-                    <p className="text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                    <p className="text-sm whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-3 rounded">
                       {selectedReport.managerComments || 'No comments'}
                     </p>
                   </div>
@@ -455,8 +629,8 @@ export default function ReportsClient() {
               )}
               
               <div>
-                <Label className="text-sm font-medium text-gray-500">Submitted At</Label>
-                <p className="text-sm">
+                <Label className="text-sm font-medium text-gray-500 dark:text-gray-400">Submitted At</Label>
+                <p className="text-sm dark:text-gray-300">
                   {selectedReport.submittedAt
                     ? new Date(selectedReport.submittedAt).toLocaleString()
                     : 'Not submitted'}

@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Plus, Trash2, Calendar, FileText, Star, Lock } from 'lucide-react';
+import { StatusBadge } from '@/components/shared/status-badge';
 
 interface Competency {
   name: string;
@@ -253,7 +254,24 @@ export default function CycleManagementClient() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse mt-2"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-100 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -295,9 +313,7 @@ export default function CycleManagementClient() {
                       <TableCell>{new Date(cycle.startDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(cycle.endDate).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                          {statusLabels[cycle.status]}
-                        </span>
+                        <StatusBadge status={cycle.status} />
                       </TableCell>
                       <TableCell>{cycle.competencies.length}</TableCell>
                       <TableCell>
@@ -354,12 +370,12 @@ export default function CycleManagementClient() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-2xl font-semibold">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b border-gray-200 dark:border-[hsl(var(--border))]">
+            <DialogTitle className="text-2xl font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
               {editingCycle ? 'Edit Cycle' : 'Create New Cycle'}
             </DialogTitle>
-            <DialogDescription className="text-base mt-2">
+            <DialogDescription className="text-base mt-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               {editingCycle
                 ? 'Update the appraisal cycle information below.'
                 : 'Fill in the details to create a new appraisal cycle for your organization.'}
@@ -369,9 +385,9 @@ export default function CycleManagementClient() {
             <div className="space-y-6 py-6">
               {/* Basic Information Section */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-[hsl(var(--border))]">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Basic Information</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
@@ -386,7 +402,7 @@ export default function CycleManagementClient() {
                       className="h-11"
                       required
                     />
-                    <p className="text-xs text-gray-500">Enter a descriptive name for this appraisal cycle</p>
+                    <p className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))]">Enter a descriptive name for this appraisal cycle</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -423,11 +439,11 @@ export default function CycleManagementClient() {
 
               {/* Competencies Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-[hsl(var(--border))]">
                   <div className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Competencies</h3>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <Star className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Competencies</h3>
+                    <span className="text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))] bg-gray-100 dark:bg-[hsl(var(--muted))] px-2 py-1 rounded-full">
                       {formData.competencies.length} {formData.competencies.length === 1 ? 'competency' : 'competencies'}
                     </span>
                   </div>
@@ -444,21 +460,21 @@ export default function CycleManagementClient() {
                 </div>
                 <div className="space-y-3">
                   {formData.competencies.length === 0 ? (
-                    <div className="text-center py-8 border-2 border-dashed rounded-lg bg-gray-50">
-                      <Star className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-500">No competencies added yet</p>
-                      <p className="text-xs text-gray-400 mt-1">Click "Add Competency" to get started</p>
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                      <Star className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-2" />
+                      <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">No competencies added yet</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Click "Add Competency" to get started</p>
                     </div>
                   ) : (
                     formData.competencies.map((comp, index) => (
                       <div 
                         key={index} 
-                        className="p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors"
+                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       >
                         <div className="flex gap-3 items-start">
                           <div className="flex-1 space-y-3">
                             <div className="space-y-2">
-                              <Label className="text-xs text-gray-500">
+                              <Label className="text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
                                 Competency Name <span className="text-red-500">*</span>
                               </Label>
                               <Input
@@ -471,7 +487,7 @@ export default function CycleManagementClient() {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-2">
-                                <Label className="text-xs text-gray-500">Type</Label>
+                                <Label className="text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))]">Type</Label>
                                 <Select
                                   value={comp.type}
                                   onValueChange={(value: 'rating' | 'text') =>
@@ -499,7 +515,7 @@ export default function CycleManagementClient() {
                               </div>
                               {comp.type === 'rating' && (
                                 <div className="space-y-2">
-                                  <Label className="text-xs text-gray-500">Max Rating</Label>
+                                  <Label className="text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))]">Max Rating</Label>
                                   <Input
                                     type="number"
                                     placeholder="Max"
@@ -520,7 +536,7 @@ export default function CycleManagementClient() {
                             variant="ghost"
                             size="sm"
                             onClick={() => removeCompetency(index)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
+                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 mt-6"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -530,7 +546,7 @@ export default function CycleManagementClient() {
                   )}
                 </div>
                 {formData.competencies.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))] mt-2">
                     <span className="text-red-500">*</span> Required fields must be filled before creating the cycle
                   </p>
                 )}

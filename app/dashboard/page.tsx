@@ -12,6 +12,7 @@ export default async function DashboardRedirect() {
   switch (user.role) {
     case 'super_admin':
       redirect('/dashboard/admin');
+      
     case 'hr':
       redirect('/dashboard/hr');
     case 'manager':

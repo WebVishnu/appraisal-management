@@ -30,6 +30,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import {
+  Users,
+  FileText,
+  CheckCircle,
+  Clock,
+  Star,
+  TrendingUp,
+  Calendar as CalendarIcon,
+  UserCheck,
+  AlertCircle
+} from 'lucide-react';
+import { SkeletonCard } from '@/components/shared/skeleton-loader';
+import { formatDate } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 
 interface Competency {
   name: string;
@@ -55,9 +69,11 @@ interface Employee {
 
 interface SelfReview {
   _id: string;
-  cycleId: string;
-  employeeId: string;
+  cycleId: string | { _id: string; name: string; status: string };
+  employeeId: string | { _id: string; name: string; email: string; employeeId: string };
   status: 'draft' | 'submitted';
+  submittedAt?: string | Date;
+  createdAt?: string | Date;
 }
 
 interface ManagerReview {
@@ -118,7 +134,7 @@ export default function ManagerReviewsClient() {
     try {
       const response = await fetch('/api/cycles/active?status=open_manager_review');
       const closedResponse = await fetch('/api/cycles/active?status=closed');
-      
+
       if (response.ok && closedResponse.ok) {
         const openData = await response.json();
         const closedData = await closedResponse.json();
@@ -145,12 +161,13 @@ export default function ManagerReviewsClient() {
 
   const fetchSelfReviews = async () => {
     try {
-      // We need to check which employees have submitted self reviews
-      // This is a simplified approach - in production, you might want a dedicated endpoint
-      const response = await fetch(`/api/reviews/self?cycleId=${selectedCycle}`);
+      // Fetch self reviews for all team members for the selected cycle
+      const response = await fetch(`/api/reviews/team-self?cycleId=${selectedCycle}`);
       if (response.ok) {
         const data = await response.json();
         setSelfReviews(data);
+      } else {
+        console.error('Failed to fetch team self reviews:', response.status);
       }
     } catch (error) {
       console.error('Error fetching self reviews:', error);
@@ -237,6 +254,7 @@ export default function ManagerReviewsClient() {
         toast.success(submit ? 'Review submitted successfully' : 'Review saved as draft');
         setIsDialogOpen(false);
         fetchReviews();
+        fetchSelfReviews(); // Refresh self reviews to update status
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to save review');
@@ -254,155 +272,430 @@ export default function ManagerReviewsClient() {
 
   const hasSelfReview = (employeeId: string) => {
     return selfReviews.some(
-      (r) =>
-        ((r.employeeId as any)._id === employeeId || (r.employeeId as any).toString() === employeeId) &&
-        r.status === 'submitted'
+      (r) => {
+        const reviewEmployeeId = (r.employeeId as any)?._id || (r.employeeId as any)?.toString() || r.employeeId;
+        const targetEmployeeId = employeeId.toString();
+        return (
+          reviewEmployeeId.toString() === targetEmployeeId &&
+          r.status === 'submitted'
+        );
+      }
     );
   };
 
   const currentCycle = cycles.find((c) => c._id === selectedCycle);
 
+  // Calculate statistics
+  const stats = {
+    total: teamMembers.length,
+    reviewed: reviews.filter(r => r.status === 'submitted').length,
+    draft: reviews.filter(r => r.status === 'draft').length,
+    pending: teamMembers.length - reviews.length,
+    withSelfReview: teamMembers.filter(e => hasSelfReview(e._id)).length,
+  };
+
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonCard showTitle showDescription />
+        <SkeletonCard showTitle showDescription />
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <Label htmlFor="cycle-select" className="mb-2 block">
-          Select Appraisal Cycle
-        </Label>
-        <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-          <SelectTrigger id="cycle-select" className="w-full max-w-md">
-            <SelectValue placeholder="Select a cycle" />
-          </SelectTrigger>
-          <SelectContent>
-            {cycles.map((cycle) => (
-              <SelectItem key={cycle._id} value={cycle._id}>
-                {cycle.name} ({cycle.status.replace('_', ' ')})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-6">
+      {/* Cycle Selection - Card Based */}
+      <Card className="bg-white dark:bg-[hsl(var(--card))]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-[hsl(var(--foreground))]">
+            <CalendarIcon className="h-5 w-5" />
+            Select Appraisal Cycle
+          </CardTitle>
+          <CardDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">Choose a cycle to review your team members</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {cycles.length === 0 ? (
+            <div className="text-center py-8">
+              <CalendarIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+              <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                No cycles available
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {cycles.map((cycle) => {
+                const isSelected = selectedCycle === cycle._id;
+                const cycleReviews = reviews.filter(r =>
+                  (r.cycleId as any)?._id === cycle._id || (r.cycleId as any)?.toString() === cycle._id
+                );
+                const submittedCount = cycleReviews.filter(r => r.status === 'submitted').length;
+                const draftCount = cycleReviews.filter(r => r.status === 'draft').length;
+
+                const getStatusColor = (status: string) => {
+                  switch (status) {
+                    case 'open_manager_review':
+                      return 'border-green-500 dark:border-green-400 bg-green-500/10 hover:bg-green-100/80 dark:hover:bg-green-900/15';
+                    case 'closed':
+                      return 'border-gray-500 dark:border-gray-600 bg-gray-500/10 hover:bg-gray-100 dark:hover:bg-gray-800/60';
+                    case 'open_self_review':
+                      return 'border-blue-500 dark:border-blue-400 bg-blue-500/10 hover:bg-blue-100/80 dark:hover:bg-blue-900/15';
+                    default:
+                      return 'border-yellow-500 dark:border-yellow-400 bg-yellow-500/10 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/15';
+                  }
+                };
+
+                const getStatusBadgeColor = (status: string) => {
+                  switch (status) {
+                    case 'open_manager_review':
+                      return 'bg-green-500 text-white border border-green-300 font-semibold';
+                    case 'closed':
+                      return 'bg-gray-500 text-white border border-gray-300 font-semibold';
+                    case 'open_self_review':
+                      return 'bg-blue-500 text-white border border-blue-300 font-semibold';
+                    default:
+                      return 'bg-yellow-500 text-white border border-yellow-300 font-semibold';
+                  }
+                };
+
+                return (
+                  <div
+                    key={cycle._id}
+                    onClick={() => setSelectedCycle(cycle._id)}
+                    className={cn(
+                      'relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md dark:hover:shadow-lg',
+                      isSelected
+                        ? 'border-blue-500 dark:border-blue-400 bg-blue-100 dark:bg-blue-900/20 shadow-md dark:shadow-blue-900/20 ring-2 ring-blue-300 dark:ring-blue-800'
+                        : getStatusColor(cycle.status),
+                      'hover:scale-[1.02]'
+                    )}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] text-lg mb-1">
+                          {cycle.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                          <CalendarIcon className="h-3 w-3 text-gray-600 dark:text-[hsl(var(--muted-foreground))]" />
+                          <span>
+                            {formatDate(cycle.startDate)} - {formatDate(cycle.endDate)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={cn(
+                            'px-2.5 py-1 rounded-full text-xs font-semibold',
+                            getStatusBadgeColor(cycle.status)
+                          )}
+                        >
+                          {cycle.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                        {cycleReviews.length > 0 && (
+                          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                            {submittedCount > 0 && (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                {submittedCount}
+                              </span>
+                            )}
+                            {draftCount > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                                {draftCount}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
+                          <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                            ✓ Currently selected
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      
+      {!selectedCycle && cycles.length === 0 && !loading && (
+        <Card className="bg-white dark:bg-[hsl(var(--card))]">
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <FileText className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] mb-2">
+                No Appraisal Cycles Available
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                There are no cycles available for review. Please contact HR to create a new cycle.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Statistics Cards */}
+      {selectedCycle && currentCycle && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-l-4 border-l-blue-500 dark:border-l-blue-400 bg-white dark:bg-[hsl(var(--card))]">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                <Users className="h-4 w-4" />
+                Team Members
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                {stats.total}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-green-500 dark:border-l-green-400 bg-white dark:bg-[hsl(var(--card))]">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                <CheckCircle className="h-4 w-4" />
+                Reviews Submitted
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {stats.reviewed}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))] mt-1">
+                {stats.total > 0 ? Math.round((stats.reviewed / stats.total) * 100) : 0}% complete
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-yellow-500 dark:border-l-yellow-400 bg-white dark:bg-[hsl(var(--card))]">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                <Clock className="h-4 w-4" />
+                Draft Reviews
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {stats.draft}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-purple-500 dark:border-l-purple-400 bg-white dark:bg-[hsl(var(--card))]">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                <UserCheck className="h-4 w-4" />
+                With Self-Review
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                {stats.withSelfReview}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
 
       {selectedCycle && currentCycle && (
-        <Card>
+        <Card className="bg-white dark:bg-[hsl(var(--card))]">
           <CardHeader>
-            <CardTitle>{currentCycle.name} - Team Reviews</CardTitle>
-            <CardDescription>
-              {new Date(currentCycle.startDate).toLocaleDateString()} -{' '}
-              {new Date(currentCycle.endDate).toLocaleDateString()}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl text-gray-900 dark:text-[hsl(var(--foreground))]">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  {currentCycle.name}
+                </CardTitle>
+                <CardDescription className="mt-2 flex items-center gap-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+                  <CalendarIcon className="h-4 w-4" />
+                  {formatDate(currentCycle.startDate)} - {formatDate(currentCycle.endDate)}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${currentCycle.status === 'open_manager_review'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-300 dark:border-green-800'
+                    : currentCycle.status === 'closed'
+                      ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-gray-300 dark:border-gray-700'
+                      : currentCycle.status === 'open_self_review'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-300 dark:border-blue-800'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800'
+                  }`}>
+                  {currentCycle.status.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {teamMembers.length === 0 ? (
-              <p className="text-center text-gray-500">No team members found</p>
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-[hsl(var(--muted-foreground))]">No team members found</p>
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Self Review</TableHead>
-                    <TableHead>Review Status</TableHead>
-                    <TableHead>Final Rating</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teamMembers.map((employee) => {
-                    const review = getReviewForEmployee(employee._id);
-                    const hasSelf = hasSelfReview(employee._id);
-                    // Managers can now edit/create reviews regardless of self-review status
-                    const canEdit =
-                      currentCycle.status === 'open_manager_review' &&
-                      review?.status !== 'submitted';
-                    const canView = currentCycle.status === 'closed' && review?.status === 'submitted';
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+                      <TableHead className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Employee</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Self Review</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Review Status</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">Final Rating</TableHead>
+                      <TableHead className="font-semibold text-right text-gray-900 dark:text-[hsl(var(--foreground))]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamMembers.map((employee) => {
+                      const review = getReviewForEmployee(employee._id);
+                      const hasSelf = hasSelfReview(employee._id);
+                      const canEdit =
+                        currentCycle.status === 'open_manager_review' &&
+                        review?.status !== 'submitted';
+                      const canView = currentCycle.status === 'closed' && review?.status === 'submitted';
 
-                    return (
-                      <TableRow key={employee._id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{employee.name}</div>
-                            <div className="text-sm text-gray-500">{employee.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              hasSelf ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                            }`}
-                            title={hasSelf ? 'Employee has submitted self-review' : 'Employee self-review not yet submitted (optional)'}
-                          >
-                            {hasSelf ? 'Submitted' : 'Not submitted'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {review ? (
+                      return (
+                        <TableRow
+                          key={employee._id}
+                          className="hover:bg-gray-50 dark:hover:bg-[hsl(var(--muted))] transition-colors border-gray-200 dark:border-[hsl(var(--border))]"
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                                  {employee.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-[hsl(var(--foreground))]">
+                                  {employee.name}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                                  {employee.email}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                review.status === 'submitted'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${hasSelf
+                                  ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400 border border-green-300 dark:border-green-800'
+                                  : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border border-gray-300 dark:border-gray-700'
+                                }`}
+                              title={hasSelf ? 'Employee has submitted self-review' : 'Employee self-review not yet submitted (optional)'}
                             >
-                              {review.status === 'submitted' ? 'Submitted' : 'Draft'}
+                              {hasSelf ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3" />
+                              )}
+                              {hasSelf ? 'Submitted' : 'Pending'}
                             </span>
-                          ) : (
-                            <span className="text-sm text-gray-500">Not started</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {review?.finalRating || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleStartReview(employee, currentCycle)}
-                            >
-                              {review ? 'Edit Review' : 'Start Review'}
-                            </Button>
-                          )}
-                          {canView && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStartReview(employee, currentCycle)}
-                            >
-                              View Review
-                            </Button>
-                          )}
-                          {!canEdit && !canView && (
-                            <span className="text-sm text-gray-500">
-                              {currentCycle.status === 'closed'
-                                ? 'Cycle closed'
-                                : currentCycle.status !== 'open_manager_review'
-                                ? 'Cycle not open for manager review'
-                                : 'Not available'}
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell>
+                            {review ? (
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${review.status === 'submitted'
+                                    ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400 border border-green-300 dark:border-green-800'
+                                    : 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-800'
+                                  }`}
+                              >
+                                {review.status === 'submitted' ? (
+                                  <CheckCircle className="h-3 w-3" />
+                                ) : (
+                                  <Clock className="h-3 w-3" />
+                                )}
+                                {review.status === 'submitted' ? 'Submitted' : 'Draft'}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                                Not started
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {review?.finalRating ? (
+                              <div className="flex items-center gap-1.5">
+                                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                <span className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                                  {review.finalRating}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleStartReview(employee, currentCycle)}
+                                className="gap-2"
+                              >
+                                <FileText className="h-4 w-4" />
+                                {review ? 'Edit Review' : 'Start Review'}
+                              </Button>
+                            )}
+                            {canView && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStartReview(employee, currentCycle)}
+                                className="gap-2"
+                              >
+                                <TrendingUp className="h-4 w-4" />
+                                View Review
+                              </Button>
+                            )}
+                            {!canEdit && !canView && (
+                              <span className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                                {currentCycle.status === 'closed'
+                                  ? 'Cycle closed'
+                                  : currentCycle.status !== 'open_manager_review'
+                                    ? 'Not open'
+                                    : 'Not available'}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedEmployee?.name} - Manager Review ({selectedCycleData?.name})
+            <DialogTitle className="flex items-center gap-2 text-xl text-gray-900 dark:text-[hsl(var(--foreground))]">
+              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              {selectedEmployee?.name} - Manager Review
             </DialogTitle>
-            <DialogDescription>
-              {selectedCycleData?.status === 'closed'
-                ? 'View your submitted review'
-                : 'Fill in the manager review below. You can save as draft and submit later.'}
+            <DialogDescription className="flex items-center gap-2 mt-2 text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+              <span className="font-medium">{selectedCycleData?.name}</span>
+              {selectedCycleData?.status === 'closed' ? (
+                <span className="text-xs">
+                  (View only - Cycle closed)
+                </span>
+              ) : (
+                <span className="text-xs">
+                  Fill in the review below. You can save as draft and submit later.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {selectedCycleData && (
@@ -410,7 +703,7 @@ export default function ManagerReviewsClient() {
               <div className="space-y-4 py-4">
                 {selectedCycleData.competencies.map((comp) => (
                   <div key={comp.name} className="space-y-2">
-                    <Label htmlFor={comp.name}>
+                    <Label htmlFor={comp.name} className="text-gray-900 dark:text-[hsl(var(--foreground))]">
                       {comp.name}
                       {comp.type === 'rating' && comp.maxRating && ` (1-${comp.maxRating})`}
                     </Label>
@@ -454,7 +747,7 @@ export default function ManagerReviewsClient() {
                   </div>
                 ))}
                 <div className="space-y-2">
-                  <Label htmlFor="managerComments">Manager Comments</Label>
+                  <Label htmlFor="managerComments" className="text-gray-900 dark:text-[hsl(var(--foreground))]">Manager Comments</Label>
                   <Textarea
                     id="managerComments"
                     value={formData.managerComments}
@@ -464,7 +757,7 @@ export default function ManagerReviewsClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="finalRating">Final Rating *</Label>
+                  <Label htmlFor="finalRating" className="text-gray-900 dark:text-[hsl(var(--foreground))]">Final Rating *</Label>
                   <Input
                     id="finalRating"
                     value={formData.finalRating}

@@ -179,8 +179,8 @@ export default function EmployeeAppraisalsClient() {
   return (
     <div>
       {cycles.length > 0 && availableCycles.length === 0 && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
             <strong>Note:</strong> There are {cycles.length} cycle(s) available, but none are currently open for self-review. 
             Please wait for HR to open the cycle for self-review, or check back later.
           </p>
@@ -191,8 +191,8 @@ export default function EmployeeAppraisalsClient() {
           <Card className="col-span-full">
             <CardContent className="pt-6">
               <div className="text-center py-8">
-                <p className="text-gray-500 text-lg mb-2">No appraisal cycles available</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No appraisal cycles available</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
                   {cycles.length === 0 
                     ? 'No cycles have been created yet. Please contact HR for more information.'
                     : 'No cycles are currently open for self-review. Please check back later or contact HR.'}
@@ -218,14 +218,14 @@ export default function EmployeeAppraisalsClient() {
                 <CardContent>
                   <div className="space-y-2">
                     <div>
-                      <span className="text-sm text-gray-600">Status: </span>
-                      <span className="text-sm font-medium capitalize">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Status: </span>
+                      <span className="text-sm font-medium capitalize dark:text-gray-300">
                         {cycle.status.replace('_', ' ')}
                       </span>
                     </div>
                     {review && (
                       <div>
-                        <span className="text-sm text-gray-600">Review Status: </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Review Status: </span>
                         <span
                           className={`text-sm font-medium ${
                             review.status === 'submitted' ? 'text-green-600' : 'text-yellow-600'
@@ -253,7 +253,7 @@ export default function EmployeeAppraisalsClient() {
                       </Button>
                     )}
                     {!canEdit && !canView && (
-                      <p className="text-sm text-gray-500 mt-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                         {cycle.status === 'closed'
                           ? 'Review not submitted'
                           : 'Waiting for cycle to open'}
@@ -268,12 +268,12 @@ export default function EmployeeAppraisalsClient() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-[hsl(var(--foreground))]">
               {selectedCycle?.name} - Self Assessment
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               {selectedCycle?.status === 'closed'
                 ? 'View your submitted review'
                 : 'Fill in your self-assessment below. You can save as draft and submit later.'}
