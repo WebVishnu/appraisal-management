@@ -34,10 +34,17 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success('Login successful');
-      router.push('/dashboard');
-      router.refresh();
+      if (result?.ok) {
+        toast.success('Login successful');
+        // Use window.location for a full page reload to ensure session is available
+        // This ensures the server-side session check in /dashboard/page.tsx works correctly
+        window.location.href = '/dashboard';
+      } else {
+        toast.error('Login failed. Please try again.');
+        setIsLoading(false);
+      }
     } catch (error) {
+      console.error('Login error:', error);
       toast.error('An error occurred during login');
       setIsLoading(false);
     }
