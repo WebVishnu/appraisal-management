@@ -36,9 +36,9 @@ export default function LoginPage() {
 
       if (result?.ok) {
         toast.success('Login successful');
-        // Use window.location for a full page reload to ensure session is available
-        // This ensures the server-side session check in /dashboard/page.tsx works correctly
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
+        setIsLoading(false);
+        return;
       } else {
         toast.error('Login failed. Please try again.');
         setIsLoading(false);
@@ -105,9 +105,9 @@ export default function LoginPage() {
                 autoComplete="current-password"
               />
             </div>
-            <Button 
-              type="submit" 
-              className="w-full h-11 text-base font-medium" 
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-medium"
               disabled={isLoading}
             >
               {isLoading ? (
