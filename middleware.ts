@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { auth } from '@/app/api/auth/[...nextauth]/route';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -36,52 +36,47 @@ export async function middleware(request: NextRequest) {
     valueLength: sessionTokenCookie?.value?.length || null,
   });
 
-  // Try to get token - getToken() should automatically find the right cookie
-  let token = null;
+  // Use NextAuth v5 auth() function which handles JWE token decryption
+  let session = null;
   try {
-    token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-    
-    // If token is still null but we have a session cookie, log more details
-    if (!token && sessionTokenCookie) {
-      console.log('[MIDDLEWARE] Token is null but session cookie exists. Possible issues:');
-      console.log('[MIDDLEWARE] - Secret mismatch between login and middleware');
-      console.log('[MIDDLEWARE] - Token encryption/decryption issue');
-      console.log('[MIDDLEWARE] - Cookie value:', sessionTokenCookie.value?.substring(0, 50) + '...');
-    }
+    // auth() function automatically reads cookies from the request
+    session = await auth();
   } catch (error) {
-    console.log('[MIDDLEWARE] Error getting token:', error);
+    console.log('[MIDDLEWARE] Error getting session:', error);
     console.log('[MIDDLEWARE] Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : null,
     });
   }
 
-  console.log('[MIDDLEWARE] Token check:', {
-    hasToken: !!token,
-    tokenSub: token?.sub || null,
-    tokenRole: token?.role || null,
-    tokenExp: token?.exp || null,
+  console.log('[MIDDLEWARE] Session check:', {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id || null,
+    userRole: session?.user?.role || null,
+    userEmail: session?.user?.email || null,
     hasSecret: !!process.env.NEXTAUTH_SECRET,
   });
 
   // If not authenticated and trying to access protected route, redirect to login
-  if (!token && path.startsWith('/dashboard')) {
-    console.log('[MIDDLEWARE] No token found, redirecting to login');
-    const redirectUrl = new URL('/login', request.url);
-    console.log('[MIDDLEWARE] Redirect URL:', redirectUrl.toString());
-    return NextResponse.redirect(redirectUrl);
+  if (!session || !session.user) {
+    if (path.startsWith('/dashboard')) {
+      console.log('[MIDDLEWARE] No session found, redirecting to login');
+      const redirectUrl = new URL('/login', request.url);
+      console.log('[MIDDLEWARE] Redirect URL:', redirectUrl.toString());
+      return NextResponse.redirect(redirectUrl);
+    }
+    return NextResponse.next();
   }
 
   // If authenticated, check role-based access
-  if (token) {
-    const role = token.role as string;
+  if (session && session.user) {
+    const role = session.user.role as string;
     console.log('[MIDDLEWARE] User authenticated, checking role access:', {
       role,
       path,
-      userId: token.sub,
+      userId: session.user.id,
+      email: session.user.email,
     });
 
     // Admin routes
