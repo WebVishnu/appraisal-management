@@ -36,27 +36,53 @@ export async function middleware(request: NextRequest) {
     valueLength: sessionTokenCookie?.value?.length || null,
   });
 
-  // Use getToken() which is Edge Runtime compatible
-  // For NextAuth v5, getToken() should handle JWE token decryption
+  // For NextAuth v5 with JWE tokens, getToken() doesn't work properly
+  // Instead, we'll check the session by making a request to the session endpoint
+  // or try getToken() first, then fallback to session API
   let token = null;
+  let session = null;
+  
   try {
+    // First try getToken() - it might work in some cases
     token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
     });
+    
+    // If getToken() fails, try fetching session from API
+    if (!token && sessionTokenCookie) {
+      const sessionUrl = new URL('/api/auth/session', request.url);
+      const sessionResponse = await fetch(sessionUrl.toString(), {
+        headers: {
+          'Cookie': request.headers.get('cookie') || '',
+        },
+      });
+      
+      if (sessionResponse.ok) {
+        session = await sessionResponse.json();
+        // Extract token info from session
+        if (session?.user) {
+          token = {
+            sub: session.user.id,
+            role: session.user.role,
+            employeeId: session.user.employeeId,
+          };
+        }
+      }
+    }
   } catch (error) {
-    console.log('[MIDDLEWARE] Error getting token:', error);
+    console.log('[MIDDLEWARE] Error getting token/session:', error);
     console.log('[MIDDLEWARE] Error details:', {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : null,
     });
   }
 
   console.log('[MIDDLEWARE] Token check:', {
     hasToken: !!token,
+    hasSession: !!session,
     tokenSub: token?.sub || null,
     tokenRole: token?.role || null,
-    tokenExp: token?.exp || null,
+    sessionUserRole: session?.user?.role || null,
     hasSecret: !!process.env.NEXTAUTH_SECRET,
     secretLength: process.env.NEXTAUTH_SECRET?.length || 0,
   });
