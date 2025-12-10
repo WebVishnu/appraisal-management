@@ -25,10 +25,39 @@ export async function middleware(request: NextRequest) {
     nextAuthCookies,
   });
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,  
+  // Get the session token cookie value for debugging
+  const sessionTokenCookie = request.cookies.get('__Secure-authjs.session-token') || 
+                             request.cookies.get('authjs.session-token') ||
+                             request.cookies.get('next-auth.session-token');
+  
+  console.log('[MIDDLEWARE] Session token cookie:', {
+    found: !!sessionTokenCookie,
+    name: sessionTokenCookie?.name || null,
+    valueLength: sessionTokenCookie?.value?.length || null,
   });
+
+  // Try to get token - getToken() should automatically find the right cookie
+  let token = null;
+  try {
+    token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    
+    // If token is still null but we have a session cookie, log more details
+    if (!token && sessionTokenCookie) {
+      console.log('[MIDDLEWARE] Token is null but session cookie exists. Possible issues:');
+      console.log('[MIDDLEWARE] - Secret mismatch between login and middleware');
+      console.log('[MIDDLEWARE] - Token encryption/decryption issue');
+      console.log('[MIDDLEWARE] - Cookie value:', sessionTokenCookie.value?.substring(0, 50) + '...');
+    }
+  } catch (error) {
+    console.log('[MIDDLEWARE] Error getting token:', error);
+    console.log('[MIDDLEWARE] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null,
+    });
+  }
 
   console.log('[MIDDLEWARE] Token check:', {
     hasToken: !!token,
@@ -52,6 +81,7 @@ export async function middleware(request: NextRequest) {
     console.log('[MIDDLEWARE] User authenticated, checking role access:', {
       role,
       path,
+      userId: token.sub,
     });
 
     // Admin routes
