@@ -162,7 +162,6 @@ export default function ReportsClient() {
       const response = await fetch(`/api/reports?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Reports fetched:', data.length, 'reports');
         setReports(data);
         if (data.length === 0 && (filters.cycleId !== 'all' || filters.managerId !== 'all' || filters.employeeId !== 'all')) {
           toast.info('No reports found matching the selected filters');

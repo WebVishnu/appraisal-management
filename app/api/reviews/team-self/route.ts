@@ -51,7 +51,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(selfReviews);
   } catch (error) {
-    console.error('Error fetching team self reviews:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

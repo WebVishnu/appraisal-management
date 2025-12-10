@@ -142,7 +142,6 @@ export async function GET(req: NextRequest) {
         : null,
     });
   } catch (error) {
-    console.error('Error fetching employee dashboard stats:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -32,42 +32,22 @@ export async function GET(req: NextRequest) {
     const query: any = {};
 
     if (cycleId && cycleId !== 'all') {
-      // Convert to ObjectId if valid
       if (mongoose.Types.ObjectId.isValid(cycleId)) {
         query.cycleId = new mongoose.Types.ObjectId(cycleId);
-      } else {
-        console.log('[REPORTS] Invalid cycleId:', cycleId);
       }
     }
 
     if (managerId && managerId !== 'all') {
-      // Convert to ObjectId if valid
       if (mongoose.Types.ObjectId.isValid(managerId)) {
         query.managerId = new mongoose.Types.ObjectId(managerId);
-      } else {
-        console.log('[REPORTS] Invalid managerId:', managerId);
       }
     }
 
     if (employeeId && employeeId !== 'all') {
-      // Convert to ObjectId if valid
       if (mongoose.Types.ObjectId.isValid(employeeId)) {
         query.employeeId = new mongoose.Types.ObjectId(employeeId);
-      } else {
-        console.log('[REPORTS] Invalid employeeId:', employeeId);
       }
     }
-
-    console.log('[REPORTS] Query:', JSON.stringify(query, null, 2));
-
-    // First, let's check total count of all manager reviews
-    const totalManagerReviews = await ManagerReview.countDocuments({});
-    const submittedManagerCount = await ManagerReview.countDocuments({ status: 'submitted' });
-    const draftManagerCount = await ManagerReview.countDocuments({ status: 'draft' });
-    const totalSelfReviews = await SelfReview.countDocuments({});
-    const submittedSelfCount = await SelfReview.countDocuments({ status: 'submitted' });
-    console.log(`[REPORTS] Manager reviews - Total: ${totalManagerReviews}, Submitted: ${submittedManagerCount}, Draft: ${draftManagerCount}`);
-    console.log(`[REPORTS] Self reviews - Total: ${totalSelfReviews}, Submitted: ${submittedSelfCount}`);
 
     // Fetch manager reviews
     const managerReviews = await ManagerReview.find(query)
@@ -75,8 +55,6 @@ export async function GET(req: NextRequest) {
       .populate('employeeId', 'name employeeId email')
       .populate('managerId', 'name employeeId email')
       .sort({ submittedAt: -1, updatedAt: -1 });
-
-    console.log(`[REPORTS] Found ${managerReviews.length} manager reviews matching query`);
 
     // Fetch self reviews for the same cycles/employees if needed
     // We'll combine them with manager reviews to show complete appraisal data
@@ -96,8 +74,6 @@ export async function GET(req: NextRequest) {
       .populate('cycleId', 'name startDate endDate status')
       .populate('employeeId', 'name employeeId email')
       .sort({ submittedAt: -1, updatedAt: -1 });
-
-    console.log(`[REPORTS] Found ${selfReviews.length} self reviews matching query`);
 
     // Create a map of manager reviews by cycleId and employeeId for easy lookup
     const managerReviewMap = new Map();
@@ -174,23 +150,8 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    console.log(`[REPORTS] Returning ${combinedReports.length} combined reports (${managerReviews.length} manager reviews + ${combinedReports.length - managerReviews.length} self-only reviews)`);
-
-    // Log sample report if available
-    if (combinedReports.length > 0) {
-      console.log('[REPORTS] Sample report:', {
-        id: combinedReports[0]._id,
-        cycleId: combinedReports[0].cycleId?._id || combinedReports[0].cycleId,
-        employeeId: combinedReports[0].employeeId?._id || combinedReports[0].employeeId,
-        managerId: combinedReports[0].managerId?._id || combinedReports[0].managerId,
-        status: combinedReports[0].status,
-        hasSelfReview: !!combinedReports[0].selfReview,
-      });
-    }
-
     return NextResponse.json(combinedReports);
   } catch (error) {
-    console.error('Error fetching reports:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

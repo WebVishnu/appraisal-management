@@ -107,7 +107,6 @@ export async function GET(
       managerHierarchy,
     });
   } catch (error) {
-    console.error('Error fetching employee profile:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

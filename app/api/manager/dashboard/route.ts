@@ -147,7 +147,6 @@ export async function GET(req: NextRequest) {
       ratingDistribution,
     });
   } catch (error) {
-    console.error('Error fetching manager dashboard stats:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

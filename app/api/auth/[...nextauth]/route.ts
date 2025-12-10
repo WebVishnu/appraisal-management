@@ -14,7 +14,6 @@ export const authOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log('[AUTH] Missing credentials');
           return null;
         }
 
@@ -22,35 +21,15 @@ export const authOptions = {
 
         const email = String(credentials.email).toLowerCase();
         const password = String(credentials.password);
-        // Don't populate employeeId - we only need the ObjectId reference
         const user = await User.findOne({ email });
 
-        if (!user) {
-          console.log('[AUTH] User not found:', email);
-          return null;
-        }
-
-        if (!user.isActive) {
-          console.log('[AUTH] User is inactive:', email);
-          return null;
-        }
-
-        if (!user.password) {
-          console.log('[AUTH] Password field is missing for user:', email);
+        if (!user || !user.isActive || !user.password) {
           return null;
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        
-        console.log('[AUTH] Password check:', {
-          email,
-          passwordProvided: password,
-          passwordHash: user.password?.substring(0, 20) + '...',
-          isValid: isPasswordValid
-        });
 
         if (!isPasswordValid) {
-          console.log('[AUTH] Invalid password for:', email);
           return null;
         }
 
