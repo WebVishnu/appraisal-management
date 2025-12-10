@@ -15,10 +15,20 @@ declare global {
     var mongoose: MongooseCache | undefined;
 }
 
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+// Handle both Node.js (has global) and Edge Runtime (no global)
+const getGlobal = () => {
+    if (typeof global !== 'undefined') {
+        return global;
+    }
+    // Edge Runtime fallback - use a module-level cache instead
+    return undefined;
+};
 
-if (!global.mongoose) {
-    global.mongoose = cached;
+const globalObj = getGlobal();
+let cached: MongooseCache = (globalObj as any)?.mongoose || { conn: null, promise: null };
+
+if (globalObj && !(globalObj as any).mongoose) {
+    (globalObj as any).mongoose = cached;
 }
 
 async function connectDB() {
