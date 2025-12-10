@@ -37,8 +37,6 @@ export default function LoginPage() {
       if (result?.ok) {
         toast.success('Login successful');
         router.push('/dashboard');
-        setIsLoading(false);
-        return;
       } else {
         toast.error('Login failed. Please try again.');
         setIsLoading(false);
