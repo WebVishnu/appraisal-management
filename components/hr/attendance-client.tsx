@@ -69,13 +69,20 @@ export default function HRAttendanceClient() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    employeeId: string;
+    date: string;
+    checkIn: string;
+    checkOut: string;
+    notes: string;
+    status: 'present' | 'absent' | 'half_day' | 'missed_checkout';
+  }>({
     employeeId: '',
     date: new Date().toISOString().split('T')[0],
     checkIn: '',
     checkOut: '',
     notes: '',
-    status: 'present' as const,
+    status: 'present',
   });
 
   const fetchEmployees = async () => {

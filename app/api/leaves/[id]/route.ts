@@ -91,7 +91,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Update leave status
     if (action === 'approve') {
       leave.status = 'approved';
-      leave.approvedBy = session.user.id;
+      leave.approvedBy = new mongoose.Types.ObjectId(session.user.id);
       leave.approvedAt = new Date();
 
       // Update leave balance - use the ObjectId string
@@ -113,7 +113,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     } else if (action === 'reject') {
       leave.status = 'rejected';
-      leave.approvedBy = session.user.id;
+      leave.approvedBy = new mongoose.Types.ObjectId(session.user.id);
       leave.approvedAt = new Date();
       if (rejectionReason) {
         leave.rejectionReason = rejectionReason;

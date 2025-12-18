@@ -128,6 +128,10 @@ export async function POST(req: NextRequest) {
       'name employeeId email'
     );
 
+    if (!populatedEmployee) {
+      return NextResponse.json({ error: 'Failed to retrieve created employee' }, { status: 500 });
+    }
+
     return NextResponse.json({
       ...populatedEmployee.toObject(),
       defaultPassword: validatedData.password ? undefined : defaultPassword,

@@ -5,6 +5,7 @@
 import WorkReport, { IWorkReport, ReportFrequency } from '@/lib/models/WorkReport';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
+import Leave from '@/lib/models/Leave';
 import mongoose from 'mongoose';
 
 /**
@@ -80,7 +81,15 @@ export async function detectAttendanceMismatch(
     };
   }
   
-  if (attendance.status === 'leave') {
+  // Check if employee is on leave for this date
+  const leave = await Leave.findOne({
+    employeeId,
+    startDate: { $lte: endOfDay },
+    endDate: { $gte: startOfDay },
+    status: 'approved',
+  });
+  
+  if (leave) {
     return {
       detected: true,
       reason: 'Employee on leave but submitted work report',
@@ -118,7 +127,7 @@ export async function autoFillReportMetadata(
   managerId?: mongoose.Types.ObjectId;
   managerName?: string;
   shift?: string;
-  attendanceStatus?: 'present' | 'absent' | 'leave' | 'half_day';
+  attendanceStatus?: 'present' | 'absent' | 'half_day' | 'missed_checkout';
 }> {
   const { default: connectDB } = await import('@/lib/mongodb');
   await connectDB();
@@ -148,9 +157,9 @@ export async function autoFillReportMetadata(
   return {
     employeeName: employee.name,
     employeeRole: employee.role,
-    managerId: manager?._id || null,
-    managerName: manager?.name || null,
-    shift: null, // Can be extended if shift system exists
+    managerId: manager?._id || undefined,
+    managerName: manager?.name || undefined,
+    shift: undefined, // Can be extended if shift system exists
     attendanceStatus: attendance?.status || 'present',
   };
 }
@@ -302,7 +311,9 @@ export async function getTeamProductivityOverview(
     const blockedTasks = reports.reduce((sum, r) => sum + r.blockedTasksCount, 0);
     const flags = reports
       .map(r => r.managerReview?.flag)
-      .filter((flag): flag is string => flag !== null && flag !== undefined);
+      .filter((flag): flag is 'under_utilized' | 'overloaded' | 'needs_support' | 'excellent' => 
+        flag !== null && flag !== undefined
+      );
     
     overview.push({
       employeeId: member._id,

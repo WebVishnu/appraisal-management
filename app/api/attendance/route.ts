@@ -143,7 +143,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Mark as corrected
-    attendance.correctedBy = session.user.id;
+    attendance.correctedBy = new mongoose.Types.ObjectId(session.user.id);
     attendance.correctedAt = new Date();
 
     await attendance.save();
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
       isEarlyExit,
       status: finalStatus,
       notes,
-      correctedBy: session.user.id,
+      correctedBy: new mongoose.Types.ObjectId(session.user.id),
       correctedAt: new Date(),
     });
 

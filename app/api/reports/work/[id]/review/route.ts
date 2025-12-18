@@ -78,7 +78,7 @@ export async function POST(
 
     // Update manager review
     report.managerReview = {
-      reviewedBy: session.user.id,
+      reviewedBy: new mongoose.Types.ObjectId(session.user.id),
       reviewedAt: new Date(),
       taskComments: taskComments || [],
       overallFeedback: overallFeedback || null,
