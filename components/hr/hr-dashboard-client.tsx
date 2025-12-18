@@ -15,6 +15,9 @@ import {
   BarChart3,
   Plus,
   ArrowRight,
+  Briefcase,
+  ClipboardCheck,
+  UserCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -63,6 +66,23 @@ interface DashboardStats {
     '3': number;
     '4': number;
     '5': number;
+  };
+  leaves: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    recent: number;
+  };
+  workReports: {
+    pending: number;
+    approved: number;
+    returned: number;
+    recent: number;
+  };
+  attendance: {
+    todayCheckIns: number;
+    thisMonthAttendance: number;
+    attendanceRate: number;
   };
 }
 
@@ -149,6 +169,24 @@ export default function HRDashboardClient() {
             View Reports
           </Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/hr/leave">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Leave Management
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/hr/work-reports">
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Work Reports
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/hr/attendance">
+            <UserCheck className="h-4 w-4 mr-2" />
+            Attendance
+          </Link>
+        </Button>
       </div>
 
       {/* Statistics Cards */}
@@ -176,6 +214,34 @@ export default function HRDashboardClient() {
           value={stats.overview.averageRating.toFixed(1)}
           description="Across all closed cycles"
           icon={TrendingUp}
+        />
+      </div>
+
+      {/* Leave, Work Reports & Attendance Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Pending Leaves"
+          value={stats.leaves.pending}
+          description={`${stats.leaves.approved} approved, ${stats.leaves.recent} recent`}
+          icon={Briefcase}
+        />
+        <StatCard
+          title="Pending Work Reports"
+          value={stats.workReports.pending}
+          description={`${stats.workReports.approved} approved, ${stats.workReports.returned} returned`}
+          icon={ClipboardCheck}
+        />
+        <StatCard
+          title="Today's Check-ins"
+          value={stats.attendance.todayCheckIns}
+          description={`${stats.attendance.thisMonthAttendance} this month`}
+          icon={UserCheck}
+        />
+        <StatCard
+          title="Attendance Rate"
+          value={`${stats.attendance.attendanceRate.toFixed(1)}%`}
+          description="This month"
+          icon={CheckCircle}
         />
       </div>
 
@@ -314,6 +380,57 @@ export default function HRDashboardClient() {
             <CardContent>
               <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
                 Go to Employees <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/hr/leave">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Leave Management
+              </CardTitle>
+              <CardDescription>Manage leave applications and balances</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                Go to Leaves <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/hr/work-reports">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5" />
+                Work Reports
+              </CardTitle>
+              <CardDescription>View productivity analytics and reports</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                View Reports <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/hr/attendance">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5" />
+                Attendance
+              </CardTitle>
+              <CardDescription>Monitor and manage employee attendance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                Go to Attendance <ArrowRight className="h-4 w-4 ml-2" />
               </div>
             </CardContent>
           </Link>

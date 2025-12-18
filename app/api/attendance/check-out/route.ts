@@ -4,12 +4,11 @@ import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
 import {
-  calculateWorkingHours,
-  isEarlyCheckOut,
-  determineAttendanceStatus,
   getStartOfDay,
   getEndOfDay,
 } from '@/lib/utils/attendance';
+import { isEarlyCheckOut, calculateWorkingHours } from '@/lib/utils/shift';
+import Shift from '@/lib/models/Shift';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Verify employee exists and is active
-    const employee = await Employee.findById(session.user.employeeId);
+    const employee = await Employee.findOne({ email: session.user.email });
     if (!employee || !employee.isActive) {
       return NextResponse.json({ error: 'Employee not found or inactive' }, { status: 404 });
     }
@@ -41,12 +40,12 @@ export async function POST(req: NextRequest) {
 
     // Find today's attendance record
     const attendance = await Attendance.findOne({
-      employeeId: session.user.employeeId,
+      employeeId: employee._id,
       date: {
         $gte: today,
         $lte: getEndOfDay(now),
       },
-    });
+    }).populate('shiftId');
 
     if (!attendance) {
       return NextResponse.json(
@@ -62,10 +61,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate working hours
-    const workingHours = calculateWorkingHours(attendance.checkIn, now);
-    const earlyExit = isEarlyCheckOut(now, attendance.checkIn);
-    const status = determineAttendanceStatus(attendance.checkIn, now, workingHours);
+    // Get shift details for validation
+    let shift = null;
+    if (attendance.shiftId && typeof attendance.shiftId === 'object' && '_id' in attendance.shiftId) {
+      shift = attendance.shiftId as any;
+    } else if (attendance.shiftId) {
+      shift = await Shift.findById(attendance.shiftId);
+    }
+
+    // Calculate working hours considering shift break
+    let workingHours = 0;
+    let earlyExit = false;
+
+    if (shift) {
+      workingHours = calculateWorkingHours(
+        attendance.checkIn,
+        now,
+        shift.breakDuration || 0,
+        shift.isBreakPaid || false
+      );
+      earlyExit = isEarlyCheckOut(
+        now,
+        shift.startTime,
+        shift.endTime,
+        shift.earlyExitGracePeriod || 15,
+        shift.isNightShift || false
+      );
+    } else {
+      // Fallback to default calculation
+      const diffMs = now.getTime() - attendance.checkIn.getTime();
+      workingHours = Math.floor(diffMs / (1000 * 60));
+      const minWorkingMinutes = 8 * 60; // 8 hours
+      earlyExit = workingHours < minWorkingMinutes;
+    }
+
+    // Determine status
+    let status: 'present' | 'absent' | 'half_day' | 'missed_checkout' = 'present';
+    const workingHoursDecimal = workingHours / 60;
+    const minWorkingHours = shift ? (shift.minimumWorkingHours || 480) / 60 : 8;
+    const halfDayHours = minWorkingHours / 2;
+
+    if (workingHoursDecimal >= minWorkingHours) {
+      status = 'present';
+    } else if (workingHoursDecimal >= halfDayHours) {
+      status = 'half_day';
+    } else {
+      status = 'absent';
+    }
 
     // Update attendance record
     attendance.checkOut = now;

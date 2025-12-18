@@ -83,4 +83,3 @@ const LeaveBalance: Model<ILeaveBalance> =
   mongoose.models.LeaveBalance || mongoose.model<ILeaveBalance>('LeaveBalance', LeaveBalanceSchema);
 
 export default LeaveBalance;
-

@@ -14,6 +14,9 @@ import {
   CheckCircle,
   ArrowRight,
   AlertCircle,
+  Briefcase,
+  ClipboardCheck,
+  UserCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -56,6 +59,21 @@ interface EmployeeDashboardStats {
     rating: string;
     submittedAt: string;
   } | null;
+  leaves: {
+    pending: number;
+    approved: number;
+    availableDays: number;
+  };
+  workReports: {
+    pending: number;
+    approved: number;
+    returned: number;
+  };
+  attendance: {
+    todayCheckedIn: boolean;
+    todayStatus: string;
+    thisMonthAttendance: number;
+  };
 }
 
 export default function EmployeeDashboardClient() {
@@ -112,6 +130,24 @@ export default function EmployeeDashboardClient() {
             View Goals
           </Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/employee/leave">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Leave Management
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/employee/work-reports">
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Work Reports
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/employee/attendance">
+            <UserCheck className="h-4 w-4 mr-2" />
+            Attendance
+          </Link>
+        </Button>
       </div>
 
       {/* Statistics Cards */}
@@ -139,6 +175,34 @@ export default function EmployeeDashboardClient() {
           value={stats.overview.currentRating}
           description={stats.latestReview?.cycleName || 'Latest appraisal'}
           icon={Target}
+        />
+      </div>
+
+      {/* Leave, Work Reports & Attendance Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Pending Leaves"
+          value={stats.leaves.pending}
+          description={`${stats.leaves.approved} approved, ${stats.leaves.availableDays} days available`}
+          icon={Briefcase}
+        />
+        <StatCard
+          title="Work Reports"
+          value={stats.workReports.pending}
+          description={`${stats.workReports.approved} approved, ${stats.workReports.returned} returned`}
+          icon={ClipboardCheck}
+        />
+        <StatCard
+          title="Today's Status"
+          value={stats.attendance.todayCheckedIn ? 'Checked In' : 'Not Checked In'}
+          description={stats.attendance.todayStatus}
+          icon={UserCheck}
+        />
+        <StatCard
+          title="This Month"
+          value={stats.attendance.thisMonthAttendance}
+          description="Days present"
+          icon={CheckCircle}
         />
       </div>
 
@@ -251,7 +315,7 @@ export default function EmployeeDashboardClient() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/employee/appraisals">
             <CardHeader>
@@ -264,6 +328,57 @@ export default function EmployeeDashboardClient() {
             <CardContent>
               <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
                 Go to Appraisals <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/employee/leave">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Leave Management
+              </CardTitle>
+              <CardDescription>Apply for leave and check your balance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                Go to Leaves <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/employee/work-reports">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5" />
+                Work Reports
+              </CardTitle>
+              <CardDescription>Submit and view your work reports</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                Go to Reports <ArrowRight className="h-4 w-4 ml-2" />
+              </div>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/dashboard/employee/attendance">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5" />
+                Attendance
+              </CardTitle>
+              <CardDescription>Check in/out and view attendance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                Go to Attendance <ArrowRight className="h-4 w-4 ml-2" />
               </div>
             </CardContent>
           </Link>

@@ -1,14 +1,18 @@
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import EmployeeDetailsClient from '@/components/shared/employee-details-client';
+import HRShiftManagementClient from '@/components/hr/shift-management-client';
 
-export default async function EmployeeDetailsPage() {
+export default async function HRShiftsPage() {
   const user = await getCurrentUser();
 
   if (!user || (user.role !== 'hr' && user.role !== 'super_admin')) {
     redirect('/dashboard');
   }
 
-  return <EmployeeDetailsClient />;
+  return (
+    <div className="px-4 py-6">
+      <HRShiftManagementClient />
+    </div>
+  );
 }
 

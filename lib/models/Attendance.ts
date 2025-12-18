@@ -9,6 +9,7 @@ export interface IAttendance extends Document {
   isLate: boolean;
   isEarlyExit: boolean;
   status: 'present' | 'absent' | 'half_day' | 'missed_checkout';
+  shiftId?: mongoose.Types.ObjectId; // Assigned shift for this day
   notes?: string;
   correctedBy?: mongoose.Types.ObjectId; // HR/Admin who made manual correction
   correctedAt?: Date;
@@ -53,6 +54,12 @@ const AttendanceSchema = new Schema<IAttendance>(
       type: String,
       enum: ['present', 'absent', 'half_day', 'missed_checkout'],
       default: 'present',
+    },
+    shiftId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Shift',
+      default: null,
+      index: true,
     },
     notes: {
       type: String,

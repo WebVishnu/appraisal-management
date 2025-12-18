@@ -1,0 +1,343 @@
+HR MANAGEMENT SYSTEM - SIMPLE FEATURES GUIDE
+=============================================
+
+WHAT IS THIS SYSTEM?
+--------------------
+This is a complete HR (Human Resources) management software that helps companies 
+manage their employees, track attendance, handle leave requests, schedule shifts, 
+conduct performance reviews, and monitor productivity.
+
+WHO CAN USE IT?
+--------------
+There are 4 types of users:
+
+1. SUPER ADMIN
+   - Full control over the entire system
+   - Can create and manage HR users and Managers
+   - Can view all reports and data
+
+2. HR (Human Resources)
+   - Manages all employees
+   - Creates and manages performance review cycles
+   - Views and corrects attendance for everyone
+   - Approves or rejects leave requests
+   - Creates shifts and schedules
+   - Reviews work reports
+   - Views analytics and reports
+
+3. MANAGER
+   - Manages their team members
+   - Reviews team performance
+   - Views team attendance
+   - Approves or rejects team leave requests
+   - Reviews team work reports
+   - Views team schedules and calendar
+   - Sets team goals
+
+4. EMPLOYEE
+   - Views their own dashboard
+   - Checks in and out for work
+   - Applies for leave
+   - Views their leave balance
+   - Submits work reports
+   - Fills self-assessment forms
+   - Views their performance history
+   - Views their assigned shifts
+
+
+MAIN FEATURES
+=============
+
+1. EMPLOYEE MANAGEMENT
+   - Add new employees with unique ID numbers
+   - Update employee information (name, email, role)
+   - Assign managers to employees
+   - Activate or deactivate employees
+   - View employee profiles
+   - Organize employees into teams
+
+2. ATTENDANCE TRACKING
+   - Employees check in when they arrive at work
+   - Employees check out when they leave
+   - System automatically detects if someone is late
+   - System calculates working hours
+   - HR can manually correct attendance records
+   - View attendance history for any date range
+   - Track attendance status: Present, Absent, Half Day, Missed Checkout
+
+3. LEAVE MANAGEMENT
+   - Employees can apply for leave (time off)
+   - 5 types of leave:
+     * Paid Leave
+     * Unpaid Leave
+     * Sick Leave
+     * Casual Leave
+     * Annual Leave
+   - Managers approve or reject leave requests
+   - System tracks leave balance for each employee
+   - Leave balance shows: Total days, Used days, Available days
+   - HR can manually adjust leave balances
+   - System automatically deducts leave when approved
+   - Employees can cancel pending leave requests
+
+4. SHIFT & SCHEDULE MANAGEMENT
+   - HR creates different work shifts (Morning, Evening, Night, etc.)
+   - Each shift has:
+     * Start time and end time
+     * Break duration
+     * Working days (Monday to Sunday)
+   - HR assigns shifts to employees or teams
+   - Shifts can be permanent or temporary
+   - HR creates daily schedules (roster) for employees
+   - Employees can request to swap shifts with each other
+   - Managers approve shift swap requests
+   - Employees can view their assigned shifts
+
+5. PERFORMANCE APPRAISAL SYSTEM
+   - HR creates performance review cycles
+   - Each cycle has:
+     * Start date and end date
+     * Custom questions/competencies
+   - Review process has 4 stages:
+     * Draft - HR prepares the cycle
+     * Open for Self Review - Employees fill their self-assessment
+     * Open for Manager Review - Managers review their team
+     * Closed - Reviews are finalized
+   - Employees rate themselves on different skills
+   - Managers provide feedback and ratings
+   - System calculates final performance scores
+   - Employees can view their performance history
+
+6. WORK REPORTS
+   - Employees submit daily or weekly work reports
+   - Each report includes:
+     * List of tasks completed
+     * Time spent on each task
+     * Key achievements
+     * Challenges faced
+     * Support needed
+     * Self-rating of productivity
+   - Tasks can be marked as: Completed, In Progress, or Blocked
+   - Managers review and approve reports
+   - Managers can provide feedback and ratings
+   - Managers can flag reports (Excellent, Needs Support, Overloaded, etc.)
+   - System calculates productivity scores
+   - HR can view productivity analytics for the whole company
+
+7. DASHBOARDS
+   - Each user type has their own dashboard
+   - Shows important information at a glance:
+     * Statistics and numbers
+     * Pending tasks
+     * Recent activity
+     * Charts and graphs
+   - Quick access to common actions
+
+8. NOTIFICATIONS
+   - System sends notifications for important events:
+     * When appraisal cycle starts
+     * When review deadline is approaching
+     * When leave is approved/rejected
+     * When work report needs review
+     * General reminders
+   - Users see notification count on their dashboard
+   - Users can mark notifications as read
+
+9. REPORTS & ANALYTICS
+   - HR can generate various reports:
+     * Employee reports
+     * Attendance reports
+     * Leave reports
+     * Performance reports
+     * Productivity analytics
+   - Reports can be filtered by:
+     * Date range
+     * Employee
+     * Department
+     * Status
+   - Reports show charts and statistics
+   - Can identify high performers
+   - Can identify employees who need support
+
+
+HOW IT WORKS
+============
+
+LOGIN
+-----
+- Users login with email and password
+- System remembers who you are and what you can do
+- Each user only sees what they're allowed to see
+
+EMPLOYEE WORKFLOW
+-----------------
+1. Employee logs in
+2. Checks in when arriving at work
+3. Works throughout the day
+4. Submits work report at end of day/week
+5. Applies for leave when needed
+6. Fills self-assessment during performance reviews
+7. Views their attendance, leave balance, and performance
+
+MANAGER WORKFLOW
+----------------
+1. Manager logs in
+2. Views team dashboard
+3. Reviews and approves leave requests from team
+4. Reviews and approves work reports from team
+5. Fills performance reviews for team members
+6. Views team calendar and schedules
+7. Monitors team productivity
+
+HR WORKFLOW
+-----------
+1. HR logs in
+2. Manages employee records
+3. Creates performance review cycles
+4. Views and corrects attendance records
+5. Manages leave balances
+6. Creates shifts and schedules
+7. Reviews work reports
+8. Generates reports and analytics
+9. Views company-wide statistics
+
+SUPER ADMIN WORKFLOW
+--------------------
+1. Super Admin logs in
+2. Creates and manages HR users and Managers
+3. Views all system reports
+4. Has access to everything
+
+
+KEY BENEFITS
+============
+
+FOR EMPLOYEES
+-------------
+- Easy to check in/out
+- Simple leave application process
+- Can view own attendance and leave balance
+- Clear performance feedback
+- Easy work reporting
+
+FOR MANAGERS
+------------
+- See all team information in one place
+- Quick approval process for leaves and reports
+- Easy performance review process
+- Team productivity insights
+- Better team management
+
+FOR HR
+------
+- Complete employee management
+- Automated attendance tracking
+- Easy leave balance management
+- Shift scheduling made simple
+- Comprehensive reporting
+- Productivity analytics
+
+FOR COMPANY
+-----------
+- All HR data in one system
+- Better employee management
+- Improved attendance tracking
+- Fair leave management
+- Performance tracking
+- Productivity insights
+- Data-driven decisions
+
+
+SECURITY FEATURES
+=================
+- Secure login system
+- Passwords are encrypted
+- Each user only sees their allowed data
+- Employees can't see other employees' data
+- Managers can only see their team's data
+- HR can see all data
+- System tracks who made changes (audit trail)
+
+
+WHAT DATA IS TRACKED
+====================
+
+EMPLOYEE DATA
+-------------
+- Employee ID, Name, Email, Role
+- Manager assignment
+- Active/Inactive status
+- Creation and update dates
+
+ATTENDANCE DATA
+---------------
+- Check-in time
+- Check-out time
+- Working hours
+- Late arrival status
+- Early exit status
+- Attendance status
+- Shift information
+
+LEAVE DATA
+----------
+- Leave type
+- Start date and end date
+- Number of days
+- Reason for leave
+- Approval status
+- Leave balance (total, used, available)
+
+SHIFT DATA
+----------
+- Shift name and type
+- Start and end times
+- Break duration
+- Working days
+- Shift assignments
+- Daily schedules
+
+PERFORMANCE DATA
+---------------
+- Appraisal cycles
+- Self-assessment ratings
+- Manager review ratings
+- Final performance scores
+- Historical performance
+
+WORK REPORT DATA
+---------------
+- Tasks completed
+- Time spent
+- Achievements
+- Challenges
+- Productivity ratings
+- Manager feedback
+
+
+SUMMARY
+=======
+
+This HR Management System helps companies:
+- Manage employees easily
+- Track attendance automatically
+- Handle leave requests smoothly
+- Schedule shifts efficiently
+- Conduct performance reviews
+- Monitor productivity
+- Generate useful reports
+
+The system is designed to be:
+- Easy to use
+- Secure
+- Efficient
+- Comprehensive
+- User-friendly
+
+It saves time for everyone:
+- Employees can manage their own information
+- Managers can approve things quickly
+- HR can manage everything from one place
+- Company gets better insights into workforce
+
+All features work together seamlessly to provide a complete HR management solution.

@@ -14,6 +14,10 @@ import {
   FileText,
   Users,
   Edit,
+  Briefcase,
+  ClipboardCheck,
+  UserCheck,
+  Clock,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/format';
 import {
@@ -59,6 +63,48 @@ interface Review {
   status: string;
 }
 
+interface LeaveBalance {
+  leaveType: string;
+  totalDays: number;
+  usedDays: number;
+  availableDays: number;
+  year: number;
+}
+
+interface Leave {
+  _id: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  numberOfDays: number;
+  reason: string;
+  status: string;
+  createdAt: string;
+  approvedBy?: {
+    name: string;
+    employeeId: string;
+  };
+}
+
+interface WorkReport {
+  _id: string;
+  reportDate: string;
+  status: string;
+  totalWorkHours: number;
+  productivityScore?: number;
+  createdAt: string;
+}
+
+interface Attendance {
+  _id: string;
+  date: string;
+  checkIn: string;
+  checkOut?: string;
+  workingHours?: number;
+  status: string;
+  isLate: boolean;
+}
+
 interface EmployeeProfileData {
   employee: Employee;
   reviews: Review[];
@@ -73,6 +119,35 @@ interface EmployeeProfileData {
     employeeId: string;
     email: string;
   }>;
+  leaves: {
+    recent: Leave[];
+    balances: LeaveBalance[];
+    stats: {
+      pending: number;
+      approved: number;
+      rejected: number;
+      totalDays: number;
+    };
+  };
+  workReports: {
+    recent: WorkReport[];
+    stats: {
+      total: number;
+      approved: number;
+      pending: number;
+      returned: number;
+      averageProductivity: number;
+    };
+  };
+  attendance: {
+    recent: Attendance[];
+    stats: {
+      thisMonth: number;
+      totalDays: number;
+      lateCount: number;
+      averageHours: number;
+    };
+  };
 }
 
 export default function EmployeeProfileClient() {
@@ -111,7 +186,7 @@ export default function EmployeeProfileClient() {
     return <div>Employee not found</div>;
   }
 
-  const { employee, reviews, statistics, managerHierarchy } = data;
+  const { employee, reviews, statistics, managerHierarchy, leaves, workReports, attendance } = data;
 
   // Prepare chart data
   const chartData = reviews
@@ -332,6 +407,200 @@ export default function EmployeeProfileClient() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Leave Management Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5" />
+            Leave Management
+          </CardTitle>
+          <CardDescription>Leave history and balances</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div>
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold">{leaves.stats.pending}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Approved</p>
+              <p className="text-2xl font-bold">{leaves.stats.approved}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Rejected</p>
+              <p className="text-2xl font-bold">{leaves.stats.rejected}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Days</p>
+              <p className="text-2xl font-bold">{leaves.stats.totalDays}</p>
+            </div>
+          </div>
+
+          {leaves.balances.length > 0 && (
+            <div className="mb-6">
+              <h4 className="font-medium mb-3">Leave Balances ({new Date().getFullYear()})</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {leaves.balances.map((balance, idx) => (
+                  <div key={idx} className="border rounded-lg p-3">
+                    <p className="text-sm text-gray-500 capitalize">{balance.leaveType}</p>
+                    <p className="text-lg font-bold">{balance.availableDays} / {balance.totalDays}</p>
+                    <p className="text-xs text-gray-400">Available / Total</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h4 className="font-medium mb-3">Recent Leave Applications</h4>
+            {leaves.recent.length === 0 ? (
+              <p className="text-gray-500 text-sm">No leave applications found</p>
+            ) : (
+              <div className="space-y-2">
+                {leaves.recent.map((leave) => (
+                  <div key={leave._id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium capitalize">{leave.leaveType}</span>
+                        <StatusBadge status={leave.status} size="sm" />
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(leave.startDate)} - {formatDate(leave.endDate)} ({leave.numberOfDays} days)
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">{formatDate(leave.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Work Reports Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5" />
+            Work Reports
+          </CardTitle>
+          <CardDescription>Productivity and work report history</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div>
+              <p className="text-sm text-gray-500">Total Reports</p>
+              <p className="text-2xl font-bold">{workReports.stats.total}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Approved</p>
+              <p className="text-2xl font-bold">{workReports.stats.approved}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold">{workReports.stats.pending}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Avg Productivity</p>
+              <p className="text-2xl font-bold">{workReports.stats.averageProductivity}/100</p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-3">Recent Work Reports</h4>
+            {workReports.recent.length === 0 ? (
+              <p className="text-gray-500 text-sm">No work reports found</p>
+            ) : (
+              <div className="space-y-2">
+                {workReports.recent.map((report) => (
+                  <div key={report._id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{formatDate(report.reportDate)}</span>
+                        <StatusBadge status={report.status} size="sm" />
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {report.totalWorkHours?.toFixed(1) || 0}h worked
+                        {report.productivityScore && ` • ${report.productivityScore}/100 productivity`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">{formatDate(report.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Attendance Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            Attendance
+          </CardTitle>
+          <CardDescription>Attendance history and statistics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div>
+              <p className="text-sm text-gray-500">This Month</p>
+              <p className="text-2xl font-bold">{attendance.stats.thisMonth}</p>
+              <p className="text-xs text-gray-400">out of {attendance.stats.totalDays} days</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Late Count</p>
+              <p className="text-2xl font-bold">{attendance.stats.lateCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Avg Hours/Day</p>
+              <p className="text-2xl font-bold">{attendance.stats.averageHours}h</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Attendance Rate</p>
+              <p className="text-2xl font-bold">
+                {attendance.stats.totalDays > 0 
+                  ? Math.round((attendance.stats.thisMonth / attendance.stats.totalDays) * 100)
+                  : 0}%
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-3">Recent Attendance Records</h4>
+            {attendance.recent.length === 0 ? (
+              <p className="text-gray-500 text-sm">No attendance records found</p>
+            ) : (
+              <div className="space-y-2">
+                {attendance.recent.map((record) => (
+                  <div key={record._id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{formatDate(record.date)}</span>
+                        <StatusBadge status={record.status} size="sm" />
+                        {record.isLate && (
+                          <span className="text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded">Late</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {record.checkIn && `Check-in: ${new Date(record.checkIn).toLocaleTimeString()}`}
+                        {record.checkOut && ` • Check-out: ${new Date(record.checkOut).toLocaleTimeString()}`}
+                        {record.workingHours && ` • ${(record.workingHours / 60).toFixed(1)}h`}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -5,6 +5,10 @@ import Employee from '@/lib/models/Employee';
 import AppraisalCycle from '@/lib/models/AppraisalCycle';
 import ManagerReview from '@/lib/models/ManagerReview';
 import SelfReview from '@/lib/models/SelfReview';
+import Leave from '@/lib/models/Leave';
+import LeaveBalance from '@/lib/models/LeaveBalance';
+import WorkReport from '@/lib/models/WorkReport';
+import Attendance from '@/lib/models/Attendance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -110,6 +114,55 @@ export async function GET(req: NextRequest) {
       .filter((r): r is { cycle: string; rating: number; date: Date } => r.rating !== null)
       .reverse();
 
+    // Get leave statistics
+    const currentYear = new Date().getFullYear();
+    const pendingLeaves = await Leave.countDocuments({
+      employeeId: employee._id,
+      status: 'pending',
+    });
+    const approvedLeaves = await Leave.countDocuments({
+      employeeId: employee._id,
+      status: 'approved',
+    });
+    
+    // Get leave balances
+    const leaveBalances = await LeaveBalance.find({
+      employeeId: employee._id,
+      year: currentYear,
+    });
+    const totalAvailableDays = leaveBalances.reduce((sum, balance) => sum + balance.availableDays, 0);
+
+    // Get work report statistics
+    const pendingWorkReports = await WorkReport.countDocuments({
+      employeeId: employee._id,
+      status: 'submitted',
+    });
+    const approvedWorkReports = await WorkReport.countDocuments({
+      employeeId: employee._id,
+      status: 'approved',
+    });
+    const returnedWorkReports = await WorkReport.countDocuments({
+      employeeId: employee._id,
+      status: 'returned',
+    });
+
+    // Get attendance statistics
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayAttendance = await Attendance.findOne({
+      employeeId: employee._id,
+      date: { $gte: today },
+    });
+
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+    const thisMonthAttendance = await Attendance.countDocuments({
+      employeeId: employee._id,
+      date: { $gte: thisMonthStart },
+      status: 'present',
+    });
+
     return NextResponse.json({
       overview: {
         reviewsCompleted,
@@ -140,6 +193,21 @@ export async function GET(req: NextRequest) {
             submittedAt: latestReview.submittedAt,
           }
         : null,
+      leaves: {
+        pending: pendingLeaves,
+        approved: approvedLeaves,
+        availableDays: totalAvailableDays,
+      },
+      workReports: {
+        pending: pendingWorkReports,
+        approved: approvedWorkReports,
+        returned: returnedWorkReports,
+      },
+      attendance: {
+        todayCheckedIn: !!todayAttendance?.checkIn,
+        todayStatus: todayAttendance?.status || 'absent',
+        thisMonthAttendance,
+      },
     });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

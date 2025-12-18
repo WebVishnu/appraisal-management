@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, Calendar, Briefcase } from 'lucide-react';
 import { formatDateTime, formatDate } from '@/lib/utils/format';
 import { formatWorkingHours } from '@/lib/utils/attendance';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
@@ -34,6 +34,12 @@ export default function AttendanceClient() {
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [canCheckIn, setCanCheckIn] = useState(false);
   const [canCheckOut, setCanCheckOut] = useState(false);
+  const [todayShift, setTodayShift] = useState<{
+    name: string;
+    startTime: string;
+    endTime: string;
+    gracePeriod: number;
+  } | null>(null);
 
   const fetchTodayAttendance = async () => {
     try {
@@ -76,9 +82,45 @@ export default function AttendanceClient() {
     }
   };
 
+  const fetchTodayShift = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/shifts/roster?startDate=${today}&endDate=${today}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0 && !data[0].isWeeklyOff && data[0].shiftId) {
+          setTodayShift({
+            name: data[0].shiftId.name,
+            startTime: data[0].shiftId.startTime,
+            endTime: data[0].shiftId.endTime,
+            gracePeriod: data[0].shiftId.gracePeriod || 15,
+          });
+        } else {
+          // Check permanent assignment
+          const assignmentResponse = await fetch('/api/shifts/assignments?assignmentType=permanent');
+          if (assignmentResponse.ok) {
+            const assignments = await assignmentResponse.json();
+            const myAssignment = assignments.find((a: any) => a.assignmentScope === 'employee' && a.isActive);
+            if (myAssignment && myAssignment.shiftId) {
+              setTodayShift({
+                name: myAssignment.shiftId.name,
+                startTime: myAssignment.shiftId.startTime,
+                endTime: myAssignment.shiftId.endTime,
+                gracePeriod: myAssignment.shiftId.gracePeriod || 15,
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch today shift');
+    }
+  };
+
   useEffect(() => {
     fetchTodayAttendance();
     fetchAttendanceHistory();
+    fetchTodayShift();
   }, []);
 
   const handleCheckIn = async () => {
@@ -180,6 +222,32 @@ export default function AttendanceClient() {
           Check in/out and view your attendance history
         </p>
       </div>
+
+      {/* Today's Shift Card */}
+      {todayShift && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Today's Shift
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-lg font-semibold">{todayShift.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {todayShift.startTime} - {todayShift.endTime}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Grace Period</p>
+                <p className="text-sm font-medium">{todayShift.gracePeriod} minutes</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Today's Attendance Card */}
       <Card>

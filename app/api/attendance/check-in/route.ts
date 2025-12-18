@@ -3,7 +3,8 @@ import { auth } from '../../auth/[...nextauth]/route';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
-import { isLateCheckIn, getStartOfDay, getEndOfDay, hasCheckedInToday } from '@/lib/utils/attendance';
+import { getStartOfDay, getEndOfDay } from '@/lib/utils/attendance';
+import { getAssignedShift, isLateCheckIn } from '@/lib/utils/shift';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Verify employee exists and is active
-    const employee = await Employee.findById(session.user.employeeId);
+    const employee = await Employee.findOne({ email: session.user.email });
     if (!employee || !employee.isActive) {
       return NextResponse.json({ error: 'Employee not found or inactive' }, { status: 404 });
     }
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // Check if already checked in today
     const existingAttendance = await Attendance.findOne({
-      employeeId: session.user.employeeId,
+      employeeId: employee._id,
       date: {
         $gte: today,
         $lte: getEndOfDay(now),
@@ -49,16 +50,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if late
-    const late = isLateCheckIn(now);
+    // Get assigned shift for today
+    const assignedShift = await getAssignedShift(employee._id, today);
+    let late = false;
+    let shiftId = null;
+
+    if (assignedShift && assignedShift.shift) {
+      shiftId = assignedShift.shiftId;
+      // Check if late based on shift rules
+      late = isLateCheckIn(now, assignedShift.shift.startTime, assignedShift.shift.gracePeriod);
+    } else {
+      // Fallback to default check if no shift assigned
+      const defaultStartTime = '09:00';
+      const defaultGracePeriod = 15;
+      late = isLateCheckIn(now, defaultStartTime, defaultGracePeriod);
+    }
 
     // Create attendance record
     const attendance = await Attendance.create({
-      employeeId: session.user.employeeId,
+      employeeId: employee._id,
       date: today,
       checkIn: now,
       isLate: late,
       status: 'present',
+      shiftId: shiftId,
     });
 
     return NextResponse.json({

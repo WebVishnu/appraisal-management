@@ -5,6 +5,9 @@ import Employee from '@/lib/models/Employee';
 import AppraisalCycle from '@/lib/models/AppraisalCycle';
 import ManagerReview from '@/lib/models/ManagerReview';
 import SelfReview from '@/lib/models/SelfReview';
+import Leave from '@/lib/models/Leave';
+import WorkReport from '@/lib/models/WorkReport';
+import Attendance from '@/lib/models/Attendance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -126,6 +129,44 @@ export async function GET(req: NextRequest) {
       '5': ratings.filter((r) => r >= 5).length,
     };
 
+    // Get leave statistics
+    const pendingLeaves = await Leave.countDocuments({ status: 'pending' });
+    const approvedLeaves = await Leave.countDocuments({ status: 'approved' });
+    const rejectedLeaves = await Leave.countDocuments({ status: 'rejected' });
+    const recentLeaves = await Leave.countDocuments({
+      createdAt: { $gte: sevenDaysAgo },
+    });
+
+    // Get work report statistics
+    const pendingWorkReports = await WorkReport.countDocuments({ status: 'submitted' });
+    const approvedWorkReports = await WorkReport.countDocuments({ status: 'approved' });
+    const returnedWorkReports = await WorkReport.countDocuments({ status: 'returned' });
+    const recentWorkReports = await WorkReport.countDocuments({
+      createdAt: { $gte: sevenDaysAgo },
+    });
+
+    // Get attendance statistics
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCheckIns = await Attendance.countDocuments({
+      date: { $gte: today },
+      checkIn: { $exists: true },
+    });
+
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+    const thisMonthAttendance = await Attendance.countDocuments({
+      date: { $gte: thisMonthStart },
+      status: 'present',
+    });
+
+    const totalWorkingDaysThisMonth = Math.ceil((new Date().getTime() - thisMonthStart.getTime()) / (1000 * 60 * 60 * 24));
+    const expectedAttendance = totalEmployees * totalWorkingDaysThisMonth;
+    const attendanceRate = expectedAttendance > 0 
+      ? (thisMonthAttendance / expectedAttendance) * 100 
+      : 0;
+
     return NextResponse.json({
       overview: {
         totalEmployees,
@@ -152,6 +193,23 @@ export async function GET(req: NextRequest) {
         totalSubmissions: recentSelfReviews + recentManagerReviews,
       },
       ratingDistribution,
+      leaves: {
+        pending: pendingLeaves,
+        approved: approvedLeaves,
+        rejected: rejectedLeaves,
+        recent: recentLeaves,
+      },
+      workReports: {
+        pending: pendingWorkReports,
+        approved: approvedWorkReports,
+        returned: returnedWorkReports,
+        recent: recentWorkReports,
+      },
+      attendance: {
+        todayCheckIns,
+        thisMonthAttendance,
+        attendanceRate: Math.round(attendanceRate * 10) / 10,
+      },
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
