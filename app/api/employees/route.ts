@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongodb';
 import Employee from '@/lib/models/Employee';
 import User from '@/lib/models/User';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 
 const createEmployeeSchema = z.object({
   employeeId: z.string().min(1),
@@ -11,6 +12,7 @@ const createEmployeeSchema = z.object({
   email: z.string().email(),
   role: z.string().min(1),
   managerId: z.string().optional(),
+  password: z.string().min(6).optional(),
 });
 
 const updateEmployeeSchema = z.object({
@@ -89,9 +91,35 @@ export async function POST(req: NextRequest) {
     }
 
     const employee = await Employee.create({
-      ...validatedData,
+      employeeId: validatedData.employeeId,
+      name: validatedData.name,
       email: validatedData.email.toLowerCase(),
+      role: validatedData.role,
       managerId: validatedData.managerId || null,
+      isActive: true,
+    });
+
+    // Create User account for the employee
+    // Generate default password if not provided: employeeId@123
+    const defaultPassword = validatedData.password || `${validatedData.employeeId}@123`;
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    // Determine user role based on employee role
+    let userRole: 'employee' | 'manager' | 'hr' | 'super_admin' = 'employee';
+    const roleLower = validatedData.role.toLowerCase();
+    if (roleLower.includes('admin') || roleLower.includes('super')) {
+      userRole = 'super_admin';
+    } else if (roleLower.includes('hr') || roleLower.includes('human resource')) {
+      userRole = 'hr';
+    } else if (roleLower.includes('manager') || roleLower.includes('mgr')) {
+      userRole = 'manager';
+    }
+
+    await User.create({
+      email: validatedData.email.toLowerCase(),
+      password: hashedPassword,
+      role: userRole,
+      employeeId: employee._id,
       isActive: true,
     });
 
@@ -100,7 +128,10 @@ export async function POST(req: NextRequest) {
       'name employeeId email'
     );
 
-    return NextResponse.json(populatedEmployee, { status: 201 });
+    return NextResponse.json({
+      ...populatedEmployee.toObject(),
+      defaultPassword: validatedData.password ? undefined : defaultPassword,
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

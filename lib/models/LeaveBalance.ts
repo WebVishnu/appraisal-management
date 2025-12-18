@@ -77,7 +77,7 @@ LeaveBalanceSchema.index({ employeeId: 1, leaveType: 1, year: 1 }, { unique: tru
 LeaveBalanceSchema.pre('save', function (next) {
   this.availableDays = this.totalDays - this.usedDays;
   next();
-});
+}); 
 
 const LeaveBalance: Model<ILeaveBalance> =
   mongoose.models.LeaveBalance || mongoose.model<ILeaveBalance>('LeaveBalance', LeaveBalanceSchema);

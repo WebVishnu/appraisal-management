@@ -48,10 +48,10 @@ export async function GET(
       : (report.employeeId as any)._id;
 
     if (role === 'employee') {
-      if (!session.user.employeeId) {
-        return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+      if (!session.user.email) {
+        return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
       }
-      const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+      const employee = await Employee.findOne({ email: session.user.email });
       if (!employee || employee._id.toString() !== employeeId.toString()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
@@ -108,11 +108,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Only employees can edit their reports' }, { status: 403 });
     }
 
-    if (!session.user.employeeId) {
-      return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+    if (!session.user.email) {
+      return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
     }
 
-    const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+    const employee = await Employee.findOne({ email: session.user.email });
     if (!employee || report.employeeId.toString() !== employee._id.toString()) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
@@ -218,10 +218,10 @@ export async function DELETE(
 
     // Check permissions
     if (session.user.role === 'employee') {
-      if (!session.user.employeeId) {
-        return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+      if (!session.user.email) {
+        return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
       }
-      const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+      const employee = await Employee.findOne({ email: session.user.email });
       if (!employee || report.employeeId.toString() !== employee._id.toString()) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }

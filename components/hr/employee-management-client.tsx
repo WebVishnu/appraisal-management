@@ -59,7 +59,9 @@ export default function EmployeeManagementClient() {
     email: '',
     role: '',
     managerId: '',
+    password: '',
   });
+  const [createdPassword, setCreatedPassword] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -97,7 +99,8 @@ export default function EmployeeManagementClient() {
 
   const handleCreate = () => {
     setEditingEmployee(null);
-    setFormData({ employeeId: '', name: '', email: '', role: '', managerId: 'none' });
+    setFormData({ employeeId: '', name: '', email: '', role: '', managerId: 'none', password: '' });
+    setCreatedPassword(null);
     setIsDialogOpen(true);
   };
 
@@ -109,7 +112,9 @@ export default function EmployeeManagementClient() {
       email: employee.email,
       role: employee.role,
       managerId: employee.managerId?._id || 'none',
+      password: '',
     });
+    setCreatedPassword(null);
     setIsDialogOpen(true);
   };
 
@@ -173,10 +178,16 @@ export default function EmployeeManagementClient() {
       });
 
       if (response.ok) {
-        toast.success(editingEmployee ? 'Employee updated successfully' : 'Employee created successfully');
-        setIsDialogOpen(false);
-        fetchEmployees();
-        setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '' });
+        const data = await response.json();
+        if (!editingEmployee && data.defaultPassword) {
+          setCreatedPassword(data.defaultPassword);
+          toast.success(`Employee created successfully! Default password: ${data.defaultPassword}`, { duration: 10000 });
+        } else {
+          toast.success(editingEmployee ? 'Employee updated successfully' : 'Employee created successfully');
+          setIsDialogOpen(false);
+          fetchEmployees();
+          setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '' });
+        }
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to save employee');
@@ -305,6 +316,19 @@ export default function EmployeeManagementClient() {
                 : 'Fill in the details to create a new employee.'}
             </DialogDescription>
           </DialogHeader>
+          {createdPassword && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                Employee created successfully!
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                Default password: <span className="font-mono font-bold">{createdPassword}</span>
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                Please share this password with the employee. They can change it after first login.
+              </p>
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -315,6 +339,7 @@ export default function EmployeeManagementClient() {
                     value={formData.employeeId}
                     onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                     required
+                    disabled={!!editingEmployee}
                   />
                 </div>
                 <div className="space-y-2">
@@ -349,6 +374,22 @@ export default function EmployeeManagementClient() {
                   />
                 </div>
               </div>
+              {!editingEmployee && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password (Optional)</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Leave empty for default: {EmployeeID}@123"
+                    minLength={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If left empty, default password will be: <span className="font-mono">{formData.employeeId || 'EMPLOYEEID'}@123</span>
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="managerId">Manager (Optional)</Label>
                 <Select
@@ -370,10 +411,20 @@ export default function EmployeeManagementClient() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  setCreatedPassword(null);
+                  setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '' });
+                }}
+              >
+                {createdPassword ? 'Close' : 'Cancel'}
               </Button>
-              <Button type="submit">{editingEmployee ? 'Update' : 'Create'}</Button>
+              {!createdPassword && (
+                <Button type="submit">{editingEmployee ? 'Update' : 'Create'}</Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

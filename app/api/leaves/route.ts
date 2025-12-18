@@ -36,13 +36,13 @@ export async function GET(req: NextRequest) {
     // Role-based access control
     if (role === 'employee') {
       // Employees can only see their own leaves
-      if (!session.user.employeeId) {
-        return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+      if (!session.user.email) {
+        return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
       }
-      // Get employee's MongoDB _id from their employeeId string
-      const employee = await Employee.findOne({ employeeId: session.user.employeeId });
-      if (!employee) {
-        return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
+      // Get employee's MongoDB _id from their email
+      const employee = await Employee.findOne({ email: session.user.email });
+      if (!employee || !employee.isActive) {
+        return NextResponse.json({ error: 'Employee not found or inactive' }, { status: 404 });
       }
       query.employeeId = employee._id;
     } else if (role === 'manager') {
@@ -117,8 +117,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only employees can apply for leave' }, { status: 403 });
     }
 
-    if (!session.user.employeeId) {
-      return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+    if (!session.user.email) {
+      return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
     }
 
     const body = await req.json();
@@ -133,8 +133,8 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Verify employee exists and is active - get MongoDB _id from employeeId string
-    const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+    // Verify employee exists and is active - get MongoDB _id from email
+    const employee = await Employee.findOne({ email: session.user.email });
     if (!employee || !employee.isActive) {
       return NextResponse.json({ error: 'Employee not found or inactive' }, { status: 404 });
     }
@@ -163,10 +163,10 @@ export async function POST(req: NextRequest) {
     // Calculate number of days
     const numberOfDays = calculateWorkingDays(new Date(startDate), new Date(endDate));
 
-    // Check balance if required - normalization function will handle employeeId string
+    // Check balance if required - use employee's MongoDB _id
     if (requiresBalance(leaveType)) {
       const balanceCheck = await hasSufficientBalance(
-        session.user.employeeId,
+        employeeMongoId,
         leaveType,
         numberOfDays
       );

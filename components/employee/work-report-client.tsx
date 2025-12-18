@@ -250,6 +250,11 @@ export default function WorkReportClient() {
 
   const totalHours = calculateTotalHours();
   const canEdit = !existingReport || existingReport.status === 'draft' || existingReport.status === 'returned';
+  
+  // Debug: Log the report status to help troubleshoot
+  if (existingReport) {
+    console.log('Report status:', existingReport.status, 'Can edit:', canEdit);
+  }
 
   return (
     <div className="space-y-6">
@@ -297,6 +302,11 @@ export default function WorkReportClient() {
                 <p className="font-medium">
                   {existingReport.managerReview.approved ? 'Report Approved' : 'Report Returned'}
                 </p>
+                {!existingReport.managerReview.approved && existingReport.status === 'returned' && (
+                  <p className="text-sm mt-1 font-medium text-blue-600 dark:text-blue-400">
+                    You can now edit and resubmit this report below.
+                  </p>
+                )}
                 {existingReport.managerReview.overallFeedback && (
                   <p className="text-sm mt-1">{existingReport.managerReview.overallFeedback}</p>
                 )}
@@ -540,8 +550,15 @@ export default function WorkReportClient() {
               </Button>
               <Button onClick={() => handleSave(true)} disabled={saving || submitting}>
                 <Send className="mr-2 h-4 w-4" />
-                {submitting ? 'Submitting...' : 'Submit Report'}
+                {submitting ? 'Submitting...' : existingReport?.status === 'returned' ? 'Resubmit Report' : 'Submit Report'}
               </Button>
+            </div>
+          )}
+          {!canEdit && existingReport && (
+            <div className="pt-4">
+              <p className="text-sm text-muted-foreground">
+                This report cannot be edited. {existingReport.status === 'approved' ? 'It has been approved.' : 'Please contact your manager if you need to make changes.'}
+              </p>
             </div>
           )}
         </CardContent>

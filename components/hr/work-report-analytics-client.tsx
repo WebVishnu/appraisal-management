@@ -91,7 +91,7 @@ export default function WorkReportAnalyticsClient() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [startDate, setStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [teamId, setTeamId] = useState('');
+  const [teamId, setTeamId] = useState('all');
   const [teams, setTeams] = useState<Array<{ _id: string; name: string; employeeId: string }>>([]);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function WorkReportAnalyticsClient() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const url = `/api/reports/work/analytics?startDate=${startDate}&endDate=${endDate}${teamId ? `&teamId=${teamId}` : ''}`;
+      const url = `/api/reports/work/analytics?startDate=${startDate}&endDate=${endDate}${teamId && teamId !== 'all' ? `&teamId=${teamId}` : ''}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -205,7 +205,7 @@ export default function WorkReportAnalyticsClient() {
                   <SelectValue placeholder="All Teams" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Teams</SelectItem>
+                  <SelectItem value="all">All Teams</SelectItem>
                   {teams.map((team) => (
                     <SelectItem key={team._id} value={team._id}>
                       {team.name}
@@ -343,7 +343,7 @@ export default function WorkReportAnalyticsClient() {
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               Burnout Risks
             </CardTitle>
-            <CardDescription>Employees working > 10 hours/day consistently</CardDescription>
+            <CardDescription>Employees working {'>'} 10 hours/day consistently</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

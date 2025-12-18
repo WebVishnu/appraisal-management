@@ -95,7 +95,7 @@ export default function ManagerWorkReportClient() {
   const [taskComments, setTaskComments] = useState<Record<number, string>>({});
   const [overallFeedback, setOverallFeedback] = useState('');
   const [managerProductivityRating, setManagerProductivityRating] = useState(3);
-  const [flag, setFlag] = useState<string>('');
+  const [flag, setFlag] = useState<string>('none');
   const [approved, setApproved] = useState(true);
   const [returnedReason, setReturnedReason] = useState('');
 
@@ -186,7 +186,7 @@ export default function ManagerWorkReportClient() {
     setTaskComments({});
     setOverallFeedback(report.managerReview?.overallFeedback || '');
     setManagerProductivityRating(report.managerReview?.managerProductivityRating || 3);
-    setFlag(report.managerReview?.flag || '');
+    setFlag(report.managerReview?.flag || 'none');
     setApproved(report.managerReview?.approved ?? true);
     setReturnedReason(report.managerReview?.returnedReason || '');
     setReviewDialogOpen(true);
@@ -212,7 +212,7 @@ export default function ManagerWorkReportClient() {
           })),
           overallFeedback,
           managerProductivityRating,
-          flag: flag || null,
+          flag: flag && flag !== 'none' ? flag : null,
           approved,
           returnedReason: approved ? null : returnedReason,
         }),
@@ -501,16 +501,16 @@ export default function ManagerWorkReportClient() {
               {/* Summary Sections */}
               <div>
                 <Label className="mb-2 block">Key Achievements</Label>
-                <p className="text-sm bg-gray-50 p-3 rounded">{selectedReport.keyAchievements}</p>
+                <p className="text-sm bg-muted p-3 rounded">{selectedReport.keyAchievements}</p>
               </div>
               <div>
                 <Label className="mb-2 block">Challenges Faced</Label>
-                <p className="text-sm bg-gray-50 p-3 rounded">{selectedReport.challengesFaced}</p>
+                <p className="text-sm bg-muted p-3 rounded">{selectedReport.challengesFaced}</p>
               </div>
               {selectedReport.supportNeeded && (
                 <div>
                   <Label className="mb-2 block">Support Needed</Label>
-                  <p className="text-sm bg-gray-50 p-3 rounded">{selectedReport.supportNeeded}</p>
+                  <p className="text-sm bg-muted p-3 rounded">{selectedReport.supportNeeded}</p>
                 </div>
               )}
 
@@ -552,7 +552,7 @@ export default function ManagerWorkReportClient() {
                         <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         <SelectItem value="excellent">Excellent</SelectItem>
                         <SelectItem value="overloaded">Overloaded</SelectItem>
                         <SelectItem value="needs_support">Needs Support</SelectItem>

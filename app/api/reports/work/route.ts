@@ -35,10 +35,10 @@ export async function GET(req: NextRequest) {
     // Role-based access
     if (role === 'employee') {
       // Employees can only see their own reports
-      if (!session.user.employeeId) {
-        return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+      if (!session.user.email) {
+        return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
       }
-      const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+      const employee = await Employee.findOne({ email: session.user.email });
       if (!employee) {
         return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
       }
@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only employees can create work reports' }, { status: 403 });
     }
 
-    if (!session.user.employeeId) {
-      return NextResponse.json({ error: 'Employee ID not found' }, { status: 400 });
+    if (!session.user.email) {
+      return NextResponse.json({ error: 'Employee email not found' }, { status: 400 });
     }
 
     await connectDB();
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Get employee record
-    const employee = await Employee.findOne({ employeeId: session.user.employeeId });
+    const employee = await Employee.findOne({ email: session.user.email });
     if (!employee) {
       return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
     }
