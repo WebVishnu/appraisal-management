@@ -16,6 +16,9 @@ import {
   Menu,
   X,
   Target,
+  Clock,
+  Plane,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '@/types';
@@ -36,16 +39,25 @@ const navigation: Record<UserRole, NavItem[]> = {
     { name: 'Dashboard', href: '/dashboard/hr', icon: LayoutDashboard },
     { name: 'Employees', href: '/dashboard/hr/employees', icon: Users },
     { name: 'Appraisal Cycles', href: '/dashboard/hr/cycles', icon: Calendar },
+    { name: 'Attendance', href: '/dashboard/hr/attendance', icon: Clock },
+    { name: 'Leave Management', href: '/dashboard/hr/leave', icon: Plane },
+    { name: 'Work Reports', href: '/dashboard/hr/work-reports', icon: ClipboardList },
     { name: 'Reports', href: '/dashboard/hr/reports', icon: BarChart3 },
   ],
   manager: [
     { name: 'Dashboard', href: '/dashboard/manager', icon: LayoutDashboard },
     { name: 'Team Reviews', href: '/dashboard/manager/reviews', icon: FileText },
+    { name: 'Team Attendance', href: '/dashboard/manager/attendance', icon: Clock },
+    { name: 'Team Leaves', href: '/dashboard/manager/leave', icon: Plane },
+    { name: 'Work Reports', href: '/dashboard/manager/work-reports', icon: ClipboardList },
     { name: 'Goals', href: '/dashboard/manager/goals', icon: Target },
     { name: 'Calendar', href: '/dashboard/manager/calendar', icon: Calendar },
   ],
   employee: [
     { name: 'Dashboard', href: '/dashboard/employee', icon: LayoutDashboard },
+    { name: 'Attendance', href: '/dashboard/employee/attendance', icon: Clock },
+    { name: 'Leave', href: '/dashboard/employee/leave', icon: Plane },
+    { name: 'Work Reports', href: '/dashboard/employee/work-reports', icon: ClipboardList },
     { name: 'My Appraisals', href: '/dashboard/employee/appraisals', icon: FileText },
     { name: 'Performance History', href: '/dashboard/employee/performance-history', icon: BarChart3 },
     { name: 'Goals', href: '/dashboard/employee/goals', icon: Target },

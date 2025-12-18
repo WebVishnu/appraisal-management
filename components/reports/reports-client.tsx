@@ -150,7 +150,7 @@ export default function ReportsClient() {
       console.error('Error fetching managers:', error);
     }
   };
-
+  
   const fetchReports = async () => {
     try {
       setLoading(true);
