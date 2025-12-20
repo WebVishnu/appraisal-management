@@ -37,7 +37,7 @@ export function DataTable<T extends { _id: string }>({
                 <th
                   key={column.key}
                   className={cn(
-                    'px-4 py-3 text-left text-sm font-medium text-muted-foreground',
+                    'px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground',
                     column.className
                   )}
                 >
@@ -51,7 +51,7 @@ export function DataTable<T extends { _id: string }>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-8 text-center text-sm text-muted-foreground"
+                  className="px-4 py-8 text-center text-xs sm:text-sm text-muted-foreground"
                 >
                   {emptyMessage}
                 </td>
@@ -70,7 +70,7 @@ export function DataTable<T extends { _id: string }>({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={cn('px-4 py-3 text-sm', column.className)}
+                      className={cn('px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm', column.className)}
                       onClick={(e) => {
                         // Prevent row click if clicking on actions
                         if (column.key === 'actions') {

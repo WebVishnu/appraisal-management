@@ -112,23 +112,25 @@ export default function ManagerDashboardClient() {
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="flex gap-4 flex-wrap">
-        <Button asChild>
+      <div className="flex gap-2 sm:gap-4 flex-wrap">
+        <Button asChild size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/manager/reviews">
-            <FileText className="h-4 w-4 mr-2" />
-            Review Team
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Review Team</span>
+            <span className="xs:hidden">Reviews</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/manager/goals">
-            <Target className="h-4 w-4 mr-2" />
-            Set Goals
+            <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Set Goals</span>
+            <span className="sm:hidden">Goals</span>
           </Link>
         </Button>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Team Size"
           value={stats.overview.teamSize}
@@ -184,11 +186,11 @@ export default function ManagerDashboardClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Rating Distribution</CardTitle>
-            <CardDescription>Team performance ratings</CardDescription>
+            <CardTitle className="text-base sm:text-lg">Rating Distribution</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Team performance ratings</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
               <BarChart data={ratingData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -234,19 +236,19 @@ export default function ManagerDashboardClient() {
       </Card>
 
       {/* Quick Links */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/manager/reviews">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                 Team Reviews
               </CardTitle>
-              <CardDescription>Review and evaluate your team members</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Review and evaluate your team members</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Reviews <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Reviews <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -255,15 +257,15 @@ export default function ManagerDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/manager/calendar">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                 Team Calendar
               </CardTitle>
-              <CardDescription>View team schedules and deadlines</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">View team schedules and deadlines</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                View Calendar <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                View Calendar <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>

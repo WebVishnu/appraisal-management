@@ -583,30 +583,30 @@ export default function OnboardingFormClient() {
   const isStepCompleted = submission?.stepsCompleted[currentStepData.id as keyof typeof submission.stepsCompleted] || false;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                   {isHRView 
                     ? 'Onboarding Review' 
                     : isManagerView 
                     ? 'Team Member Onboarding' 
                     : 'Employee Onboarding'}
                   {isHRView && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       HR View
                     </Badge>
                   )}
                   {isManagerView && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       Manager View (Read-Only)
                     </Badge>
                   )}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1">
                   {isHRView 
                     ? `Reviewing onboarding for ${request.firstName} ${request.lastName} (${request.email})`
                     : isManagerView
@@ -614,39 +614,43 @@ export default function OnboardingFormClient() {
                     : `Welcome ${request.firstName}! Please complete all steps to finish your onboarding.`}
                 </CardDescription>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Onboarding ID</p>
-                <p className="font-mono text-sm">{request.onboardingId}</p>
+              <div className="text-left sm:text-right">
+                <p className="text-xs sm:text-sm text-muted-foreground">Onboarding ID</p>
+                <p className="font-mono text-xs sm:text-sm break-all">{request.onboardingId}</p>
               </div>
             </div>
             {/* HR Controls - Only show for HR, not managers */}
             {isHRView && request.status === 'submitted' && (
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-blue-900 dark:text-blue-100">HR Review Mode</p>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="mt-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm sm:text-base text-blue-900 dark:text-blue-100">HR Review Mode</p>
+                    <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 mt-1">
                       {isHREditMode 
                         ? 'You can edit the submission directly. Changes will be saved immediately. Use Previous/Next buttons to navigate through all sections.'
                         : 'You can review the submission. Use Previous/Next buttons to navigate through all sections. Click "Enable Edit Mode" to make changes, or "Request Changes" to ask the employee to update specific fields.'}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       variant={isHREditMode ? "default" : "outline"}
                       size="sm"
                       onClick={() => setIsHREditMode(!isHREditMode)}
+                      className="text-xs flex-1 sm:flex-initial"
                     >
-                      <Edit className="h-4 w-4 mr-1" />
-                      {isHREditMode ? 'Disable Edit' : 'Enable Edit Mode'}
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">{isHREditMode ? 'Disable Edit' : 'Enable Edit Mode'}</span>
+                      <span className="sm:hidden">{isHREditMode ? 'Disable' : 'Edit'}</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleRequestChanges}
+                      className="text-xs flex-1 sm:flex-initial"
                     >
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      Request Changes
+                      <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Request Changes</span>
+                      <span className="sm:hidden">Changes</span>
                     </Button>
                   </div>
                 </div>
@@ -716,8 +720,9 @@ export default function OnboardingFormClient() {
           </CardHeader>
           <CardContent>
             {/* Step Indicator */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
+            <div className="mb-4 sm:mb-6">
+              {/* Desktop Step Indicator */}
+              <div className="hidden sm:flex items-center justify-between">
                 {STEPS.map((step, index) => {
                   const StepIcon = step.icon;
                   const isActive = index === currentStep;
@@ -727,7 +732,7 @@ export default function OnboardingFormClient() {
                     <div key={step.id} className="flex items-center flex-1">
                       <div className="flex flex-col items-center flex-1">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
                             isActive
                               ? 'border-primary bg-primary text-primary-foreground'
                               : isCompleted
@@ -736,9 +741,9 @@ export default function OnboardingFormClient() {
                           }`}
                         >
                           {isCompleted ? (
-                            <Check className="h-5 w-5" />
+                            <Check className="h-4 w-4 sm:h-5 sm:w-5" />
                           ) : (
-                            <StepIcon className="h-5 w-5" />
+                            <StepIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                           )}
                         </div>
                         <span className={`text-xs mt-2 text-center ${isActive ? 'font-semibold' : 'text-muted-foreground'}`}>
@@ -755,6 +760,36 @@ export default function OnboardingFormClient() {
                     </div>
                   );
                 })}
+              </div>
+              
+              {/* Mobile Step Indicator */}
+              <div className="sm:hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Step {currentStep + 1} of {STEPS.length}
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {STEPS[currentStep].title}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {STEPS.map((step, index) => {
+                    const isActive = index === currentStep;
+                    const isCompleted = submission?.stepsCompleted[step.id as keyof typeof submission.stepsCompleted] || false;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`h-1 flex-1 rounded ${
+                          isActive
+                            ? 'bg-primary'
+                            : isCompleted
+                            ? 'bg-green-500'
+                            : 'bg-gray-300'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -799,13 +834,15 @@ export default function OnboardingFormClient() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between pt-4 border-t gap-2">
               <Button
                 variant="outline"
                 onClick={handlePrevious}
                 disabled={currentStep === 0}
+                size="sm"
+                className="text-xs sm:text-sm"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 Previous
               </Button>
               <div className="flex gap-2">
@@ -813,16 +850,19 @@ export default function OnboardingFormClient() {
                 {isManagerView ? (
                   <>
                     {currentStep < STEPS.length - 1 ? (
-                      <Button onClick={handleNext} disabled={saving}>
+                      <Button onClick={handleNext} disabled={saving} size="sm" className="text-xs sm:text-sm">
                         Next
-                        <ChevronRight className="h-4 w-4 ml-1" />
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                       </Button>
                     ) : (
                       <Button
                         variant="outline"
                         onClick={() => router.push('/dashboard/manager')}
+                        size="sm"
+                        className="text-xs sm:text-sm"
                       >
-                        Back to Dashboard
+                        <span className="hidden sm:inline">Back to Dashboard</span>
+                        <span className="sm:hidden">Back</span>
                       </Button>
                     )}
                   </>
@@ -833,31 +873,40 @@ export default function OnboardingFormClient() {
                       variant="default"
                       onClick={() => handleSaveStep(currentStepData.id, false)}
                       disabled={saving}
+                      size="sm"
+                      className="text-xs sm:text-sm"
                     >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save Changes
+                      <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Save Changes</span>
+                      <span className="sm:hidden">Save</span>
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => router.push('/dashboard/hr')}
+                      size="sm"
+                      className="text-xs sm:text-sm"
                     >
-                      Back to Dashboard
+                      <span className="hidden sm:inline">Back to Dashboard</span>
+                      <span className="sm:hidden">Back</span>
                     </Button>
                   </>
                 ) : isHRView && !isHREditMode ? (
                   /* HR View Mode (not editing) - Show navigation and back button */
                   <>
                     {currentStep < STEPS.length - 1 ? (
-                      <Button onClick={handleNext} disabled={saving}>
+                      <Button onClick={handleNext} disabled={saving} size="sm" className="text-xs sm:text-sm">
                         Next
-                        <ChevronRight className="h-4 w-4 ml-1" />
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                       </Button>
                     ) : (
                       <Button
                         variant="outline"
                         onClick={() => router.push('/dashboard/hr')}
+                        size="sm"
+                        className="text-xs sm:text-sm"
                       >
-                        Back to Dashboard
+                        <span className="hidden sm:inline">Back to Dashboard</span>
+                        <span className="sm:hidden">Back</span>
                       </Button>
                     )}
                   </>
@@ -868,19 +917,23 @@ export default function OnboardingFormClient() {
                       variant="outline"
                       onClick={() => handleSaveStep(currentStepData.id, false)}
                       disabled={saving}
+                      size="sm"
+                      className="text-xs sm:text-sm"
                     >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save Draft
+                      <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Save Draft</span>
+                      <span className="sm:hidden">Save</span>
                     </Button>
                     {currentStep < STEPS.length - 1 ? (
-                      <Button onClick={handleNext} disabled={saving}>
+                      <Button onClick={handleNext} disabled={saving} size="sm" className="text-xs sm:text-sm">
                         Next
-                        <ChevronRight className="h-4 w-4 ml-1" />
+                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                       </Button>
                     ) : (
-                      <Button onClick={handleSubmit} disabled={saving || request.status === 'submitted'}>
-                        <Send className="h-4 w-4 mr-1" />
-                        Submit for Review
+                      <Button onClick={handleSubmit} disabled={saving || request.status === 'submitted'} size="sm" className="text-xs sm:text-sm">
+                        <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="hidden sm:inline">Submit for Review</span>
+                        <span className="sm:hidden">Submit</span>
                       </Button>
                     )}
                   </>
@@ -903,9 +956,9 @@ export default function OnboardingFormClient() {
     switch (stepId) {
       case 'personalDetails':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Personal Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Full Name (as per Aadhaar/PAN) *</Label>
                 <Input
@@ -926,7 +979,7 @@ export default function OnboardingFormClient() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Gender *</Label>
                 <Select
@@ -974,7 +1027,7 @@ export default function OnboardingFormClient() {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Personal Email *</Label>
                 <Input
@@ -1016,8 +1069,8 @@ export default function OnboardingFormClient() {
         if (!permanentAddr.country) permanentAddr.country = 'India';
         
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Address Details</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Address Details</h3>
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-3">Current Address *</h4>
@@ -1053,7 +1106,7 @@ export default function OnboardingFormClient() {
                     }
                     disabled={isReadOnly}
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <Input
                       placeholder="City"
                       value={currentAddr.city || ''}
@@ -1087,7 +1140,7 @@ export default function OnboardingFormClient() {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <Input
                       placeholder="Pincode"
                       value={currentAddr.pincode || ''}
@@ -1189,7 +1242,7 @@ export default function OnboardingFormClient() {
                       }
                       disabled={isReadOnly}
                     />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                       <Input
                         placeholder="City"
                         value={permanentAddr.city || ''}
@@ -1223,7 +1276,7 @@ export default function OnboardingFormClient() {
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                       <Input
                         placeholder="Pincode"
                         value={permanentAddr.pincode || ''}
@@ -1265,8 +1318,8 @@ export default function OnboardingFormClient() {
 
       case 'identityKYC':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Identity & KYC Documents</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Identity & KYC Documents</h3>
             <div className="space-y-4">
               <div>
                 <Label>Aadhaar Number</Label>
@@ -1339,9 +1392,9 @@ export default function OnboardingFormClient() {
 
       case 'employmentDetails':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Employment Details</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Employment Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Date of Joining *</Label>
                 <Input
@@ -1390,7 +1443,7 @@ export default function OnboardingFormClient() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Department *</Label>
                 <Input
@@ -1447,7 +1500,7 @@ export default function OnboardingFormClient() {
                 className="bg-muted"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Probation Status</Label>
                 <Select
@@ -1493,9 +1546,9 @@ export default function OnboardingFormClient() {
 
       case 'compensationPayroll':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Compensation & Payroll</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Compensation & Payroll</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Annual CTC (₹) *</Label>
                 <Input
@@ -1527,7 +1580,7 @@ export default function OnboardingFormClient() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>HRA (₹) *</Label>
                 <Input
@@ -1581,7 +1634,7 @@ export default function OnboardingFormClient() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -1615,7 +1668,7 @@ export default function OnboardingFormClient() {
                 <Label htmlFor="esiApplicable">ESI Applicable</Label>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Bank Name *</Label>
                 <Input
@@ -1678,8 +1731,8 @@ export default function OnboardingFormClient() {
 
       case 'statutoryTax':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Statutory & Tax Information</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Statutory & Tax Information</h3>
             <div>
               <Label>PF UAN (Universal Account Number)</Label>
               <Input
@@ -1738,8 +1791,8 @@ export default function OnboardingFormClient() {
         }
         
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Education Details</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Education Details</h3>
             <p className="text-sm text-muted-foreground mb-4">Add at least one education detail. You can add multiple entries.</p>
             {educationList.map((edu: any, index: number) => (
               <Card key={index} className="p-4">
@@ -1763,7 +1816,7 @@ export default function OnboardingFormClient() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
                       <Label>Qualification *</Label>
                       <Input
@@ -1851,12 +1904,12 @@ export default function OnboardingFormClient() {
       case 'previousEmployment':
         const employmentList = Array.isArray(stepData) ? stepData : [];
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Previous Employment (Optional)</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Previous Employment (Optional)</h3>
             {employmentList.map((emp: any, index: number) => (
               <Card key={index} className="p-4">
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
                       <Label>Company Name *</Label>
                       <Input
@@ -1884,7 +1937,7 @@ export default function OnboardingFormClient() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
                       <Label>Start Date *</Label>
                       <Input
@@ -1927,7 +1980,7 @@ export default function OnboardingFormClient() {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     <div>
                       <Label>Experience Letter</Label>
                       <div className="border-2 border-dashed rounded-lg p-3 text-center">
@@ -1976,9 +2029,9 @@ export default function OnboardingFormClient() {
 
       case 'emergencyContact':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Emergency Contact</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Contact Name *</Label>
                 <Input
@@ -1999,7 +2052,7 @@ export default function OnboardingFormClient() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Mobile Number *</Label>
                 <Input
@@ -2025,8 +2078,8 @@ export default function OnboardingFormClient() {
 
       case 'policiesDeclarations':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Policies & Declarations</h3>
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Policies & Declarations</h3>
             <div className="space-y-4">
               <div className="flex items-start space-x-3 p-4 border rounded-lg">
                 <input

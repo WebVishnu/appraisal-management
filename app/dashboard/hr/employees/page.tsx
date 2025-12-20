@@ -10,10 +10,10 @@ export default async function EmployeesPage() {
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">Employee Management</h1>
-        <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-2">Create and manage employees, assign managers</p>
+    <div className="px-3 sm:px-4 py-4 sm:py-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">Employee Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-1 sm:mt-2">Create and manage employees, assign managers</p>
       </div>
       <EmployeeManagementClient />
     </div>

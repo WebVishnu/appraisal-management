@@ -150,41 +150,47 @@ export default function HRDashboardClient() {
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="flex gap-4 flex-wrap">
-        <Button asChild>
+      <div className="flex gap-2 sm:gap-4 flex-wrap">
+        <Button asChild size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/employees">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Employee
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Add Employee</span>
+            <span className="xs:hidden">Add</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/cycles">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Cycle
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Create Cycle</span>
+            <span className="sm:hidden">Cycle</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/reports">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Reports
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">View Reports</span>
+            <span className="sm:hidden">Reports</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/leave">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Leave Management
+            <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Leave Management</span>
+            <span className="sm:hidden">Leave</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/work-reports">
-            <ClipboardCheck className="h-4 w-4 mr-2" />
-            Work Reports
+            <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Work Reports</span>
+            <span className="sm:hidden">Work</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/hr/attendance">
-            <UserCheck className="h-4 w-4 mr-2" />
-            Attendance
+            <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Attendance</span>
+            <span className="sm:hidden">Attend</span>
           </Link>
         </Button>
       </div>
@@ -218,7 +224,7 @@ export default function HRDashboardClient() {
       </div>
 
       {/* Leave, Work Reports & Attendance Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Pending Leaves"
           value={stats.leaves.pending}
@@ -317,14 +323,14 @@ export default function HRDashboardClient() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Cycles by Status</CardTitle>
-            <CardDescription>Distribution of appraisal cycles</CardDescription>
+            <CardTitle className="text-base sm:text-lg">Cycles by Status</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Distribution of appraisal cycles</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
               <PieChart>
                 <Pie
                   data={cycleStatusData}
@@ -367,19 +373,19 @@ export default function HRDashboardClient() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/employees">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 Employee Management
               </CardTitle>
-              <CardDescription>Create and manage employees, assign managers</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Create and manage employees, assign managers</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Employees <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Employees <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -388,15 +394,15 @@ export default function HRDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/leave">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
                 Leave Management
               </CardTitle>
-              <CardDescription>Manage leave applications and balances</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Manage leave applications and balances</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Leaves <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Leaves <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -405,15 +411,15 @@ export default function HRDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/work-reports">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                 Work Reports
               </CardTitle>
-              <CardDescription>View productivity analytics and reports</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">View productivity analytics and reports</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                View Reports <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                View Reports <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -422,15 +428,15 @@ export default function HRDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/attendance">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                 Attendance
               </CardTitle>
-              <CardDescription>Monitor and manage employee attendance</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Monitor and manage employee attendance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Attendance <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Attendance <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -439,15 +445,15 @@ export default function HRDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/cycles">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                 Appraisal Cycles
               </CardTitle>
-              <CardDescription>Create and manage appraisal cycles</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Create and manage appraisal cycles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Cycles <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Cycles <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -456,15 +462,15 @@ export default function HRDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/hr/reports">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
                 Reports & Analytics
               </CardTitle>
-              <CardDescription>View appraisal reports and analytics</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">View appraisal reports and analytics</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                View Reports <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                View Reports <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>

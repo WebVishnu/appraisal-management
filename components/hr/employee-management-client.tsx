@@ -194,13 +194,14 @@ export default function EmployeeManagementClient() {
     {
       key: 'employeeId',
       header: 'Employee ID',
+      className: 'hidden sm:table-cell',
     },
     {
       key: 'name',
       header: 'Name',
       render: (employee) => (
         <div className="flex items-center gap-2">
-          <span className="font-medium">{employee.name}</span>
+          <span className="font-medium text-xs sm:text-sm">{employee.name}</span>
           {isNewEmployee(employee) && (
             <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-xs">
               NEW
@@ -212,16 +213,25 @@ export default function EmployeeManagementClient() {
     {
       key: 'email',
       header: 'Email',
+      className: 'hidden md:table-cell',
+      render: (employee) => (
+        <span className="text-xs sm:text-sm break-all">{employee.email}</span>
+      ),
     },
     {
       key: 'role',
       header: 'Role',
+      className: 'hidden lg:table-cell',
+      render: (employee) => (
+        <span className="text-xs sm:text-sm">{employee.role}</span>
+      ),
     },
     {
       key: 'managerId',
       header: 'Manager',
+      className: 'hidden lg:table-cell',
       render: (employee) => (
-        <span>{employee.managerId ? employee.managerId.name : '-'}</span>
+        <span className="text-xs sm:text-sm">{employee.managerId ? employee.managerId.name : '-'}</span>
       ),
     },
     {
@@ -238,21 +248,21 @@ export default function EmployeeManagementClient() {
       render: (employee) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+              <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={(e) => handleView(e, employee._id)}>
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               View
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => handleEdit(e, employee)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => handleToggleActive(e, employee)}>
-              <Power className="h-4 w-4 mr-2" />
+              <Power className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               {employee.isActive ? 'Deactivate' : 'Activate'}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -260,7 +270,7 @@ export default function EmployeeManagementClient() {
               onClick={(e) => handleDelete(e, employee._id)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -374,40 +384,40 @@ export default function EmployeeManagementClient() {
 
   return (
     <div>
-      <div className="mb-4 flex justify-between items-center">
-        <Button onClick={handleCreate} className="cursor-pointer">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Create New Employee
+      <div className="mb-3 sm:mb-4 flex justify-between items-center">
+        <Button onClick={handleCreate} className="cursor-pointer w-full sm:w-auto" size="sm">
+          <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="text-xs sm:text-sm">Create New Employee</span>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Employees</CardTitle>
-          <CardDescription>Manage all employees in the system</CardDescription>
+          <CardTitle className="text-lg sm:text-xl">Employees</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">Manage all employees in the system</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           {/* Search and Filter Section */}
-          <div className="mb-4 space-y-4">
-            <div className="flex gap-4 flex-wrap">
+          <div className="mb-3 sm:mb-4 space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               {/* Search */}
-              <div className="flex-1 min-w-[250px]">
+              <div className="flex-1 w-full sm:min-w-[250px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by name, email, ID, or role..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-8 sm:pl-10 text-xs sm:text-sm"
                   />
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6"
                       onClick={() => setSearchQuery('')}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   )}
                 </div>
@@ -415,7 +425,7 @@ export default function EmployeeManagementClient() {
               
               {/* Status Filter */}
               <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-full sm:w-[150px] text-xs sm:text-sm">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -427,7 +437,7 @@ export default function EmployeeManagementClient() {
 
               {/* Role Filter */}
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm">
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -442,7 +452,7 @@ export default function EmployeeManagementClient() {
             </div>
             
             {/* Results count */}
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Showing {filteredEmployees.length} of {employees.length} employees
             </div>
           </div>
@@ -457,23 +467,23 @@ export default function EmployeeManagementClient() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-[hsl(var(--foreground))]">
+            <DialogTitle className="text-lg sm:text-xl text-gray-900 dark:text-[hsl(var(--foreground))]">
               {editingEmployee ? 'Edit Employee' : 'Create New Employee'}
             </DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
+            <DialogDescription className="text-xs sm:text-sm text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
               {editingEmployee
                 ? 'Update employee information below.'
                 : 'Fill in the details to create a new employee.'}
             </DialogDescription>
           </DialogHeader>
           {createdPassword && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
-              <p className="text-sm font-medium text-green-900 dark:text-green-100">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm font-medium text-green-900 dark:text-green-100">
                 Employee created successfully!
               </p>
-              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              <p className="text-xs sm:text-sm text-green-700 dark:text-green-300 mt-1">
                 Default password: <span className="font-mono font-bold">{createdPassword}</span>
               </p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-2">
@@ -482,54 +492,58 @@ export default function EmployeeManagementClient() {
             </div>
           )}
           <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="employeeId">Employee ID</Label>
+                  <Label htmlFor="employeeId" className="text-xs sm:text-sm">Employee ID</Label>
                   <Input
                     id="employeeId"
                     value={formData.employeeId}
                     onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                     required
                     disabled={!!editingEmployee}
+                    className="text-xs sm:text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name" className="text-xs sm:text-sm">Name</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
+                    className="text-xs sm:text-sm"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
+                    className="text-xs sm:text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="role" className="text-xs sm:text-sm">Role</Label>
                   <Input
                     id="role"
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     placeholder="e.g., Software Engineer"
                     required
+                    className="text-xs sm:text-sm"
                   />
                 </div>
               </div>
               {!editingEmployee && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password (Optional)</Label>
+                    <Label htmlFor="password" className="text-xs sm:text-sm">Password (Optional)</Label>
                     <Input
                       id="password"
                       type="password"
@@ -537,6 +551,7 @@ export default function EmployeeManagementClient() {
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Leave empty for random 7-digit password"
                       minLength={6}
+                      className="text-xs sm:text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
                       If left empty, a random 7-digit password will be generated
@@ -544,28 +559,30 @@ export default function EmployeeManagementClient() {
                   </div>
                   
                   {/* Create as Manager Option */}
-                  <div className="flex items-center space-x-2 p-3 border rounded-lg bg-muted/50">
-                    <Checkbox
-                      id="isManager"
-                      checked={formData.isManager}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isManager: checked as boolean })}
-                    />
-                    <Label htmlFor="isManager" className="cursor-pointer font-medium">
-                      Create as Manager
-                    </Label>
-                    <p className="text-xs text-muted-foreground ml-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2 p-3 border rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="isManager"
+                        checked={formData.isManager}
+                        onCheckedChange={(checked) => setFormData({ ...formData, isManager: checked as boolean })}
+                      />
+                      <Label htmlFor="isManager" className="cursor-pointer font-medium text-xs sm:text-sm">
+                        Create as Manager
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground sm:ml-2">
                       (Will have manager role and permissions)
                     </p>
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="managerId">Manager (Optional)</Label>
+                <Label htmlFor="managerId" className="text-xs sm:text-sm">Manager (Optional)</Label>
                 <Select
                   value={formData.managerId}
                   onValueChange={(value) => setFormData({ ...formData, managerId: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-xs sm:text-sm">
                     <SelectValue placeholder="Select a manager" />
                   </SelectTrigger>
                   <SelectContent>
@@ -579,7 +596,7 @@ export default function EmployeeManagementClient() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -588,11 +605,15 @@ export default function EmployeeManagementClient() {
                   setCreatedPassword(null);
                   setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '', isManager: false });
                 }}
+                size="sm"
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
                 {createdPassword ? 'Close' : 'Cancel'}
               </Button>
               {!createdPassword && (
-                <Button type="submit">{editingEmployee ? 'Update' : 'Create'}</Button>
+                <Button type="submit" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+                  {editingEmployee ? 'Update' : 'Create'}
+                </Button>
               )}
             </DialogFooter>
           </form>

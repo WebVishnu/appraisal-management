@@ -213,12 +213,12 @@ export default function AttendanceClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
           Attendance
         </h1>
-        <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-2">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-1 sm:mt-2">
           Check in/out and view your attendance history
         </p>
       </div>
@@ -227,20 +227,20 @@ export default function AttendanceClient() {
       {todayShift && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Briefcase className="h-4 w-4 sm:h-5 sm:w-5" />
               Today's Shift
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <p className="text-lg font-semibold">{todayShift.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base sm:text-lg font-semibold">{todayShift.name}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {todayShift.startTime} - {todayShift.endTime}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="text-xs text-muted-foreground">Grace Period</p>
                 <p className="text-sm font-medium">{todayShift.gracePeriod} minutes</p>
               </div>
@@ -252,21 +252,21 @@ export default function AttendanceClient() {
       {/* Today's Attendance Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
             Today's Attendance
           </CardTitle>
-          <CardDescription>{formatDate(new Date())}</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">{formatDate(new Date())}</CardDescription>
         </CardHeader>
         <CardContent>
           {todayAttendance ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
                     Check In
                   </p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                     {formatDateTime(todayAttendance.checkIn)}
                   </p>
                   {todayAttendance.isLate && (
@@ -275,10 +275,10 @@ export default function AttendanceClient() {
                 </div>
                 {todayAttendance.checkOut ? (
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
                       Check Out
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       {formatDateTime(todayAttendance.checkOut)}
                     </p>
                     {todayAttendance.isEarlyExit && (
@@ -289,39 +289,39 @@ export default function AttendanceClient() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
                       Check Out
                     </p>
-                    <p className="text-lg font-semibold text-gray-500">Not checked out</p>
+                    <p className="text-base sm:text-lg font-semibold text-gray-500">Not checked out</p>
                   </div>
                 )}
               </div>
               {todayAttendance.workingHours && (
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
                     Working Hours
                   </p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                     {formatWorkingHours(todayAttendance.workingHours)}
                   </p>
                 </div>
               )}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 sm:pt-4 border-t">
                 {getStatusBadge(
                   todayAttendance.status,
                   todayAttendance.isLate,
                   todayAttendance.isEarlyExit
                 )}
                 {canCheckOut && (
-                  <Button onClick={handleCheckOut} disabled={checkingOut}>
+                  <Button onClick={handleCheckOut} disabled={checkingOut} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
                     {checkingOut ? (
                       <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                         Checking Out...
                       </>
                     ) : (
                       <>
-                        <Clock className="h-4 w-4 mr-2" />
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Check Out
                       </>
                     )}
@@ -330,20 +330,20 @@ export default function AttendanceClient() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mb-4">
+            <div className="text-center py-6 sm:py-8">
+              <Clock className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mb-3 sm:mb-4">
                 You haven't checked in today
               </p>
-              <Button onClick={handleCheckIn} disabled={checkingIn} size="lg">
+              <Button onClick={handleCheckIn} disabled={checkingIn} size="sm" className="text-xs sm:text-sm">
                 {checkingIn ? (
                   <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
                     Checking In...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                     Check In
                   </>
                 )}
@@ -356,12 +356,12 @@ export default function AttendanceClient() {
       {/* Attendance History */}
       <Card>
         <CardHeader>
-          <CardTitle>Attendance History (Last 30 Days)</CardTitle>
-          <CardDescription>Your recent attendance records</CardDescription>
+          <CardTitle className="text-base sm:text-lg">Attendance History (Last 30 Days)</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">Your recent attendance records</CardDescription>
         </CardHeader>
         <CardContent>
           {attendanceHistory.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+            <div className="text-center py-6 sm:py-8 text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
               No attendance records found
             </div>
           ) : (
@@ -369,19 +369,19 @@ export default function AttendanceClient() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       Date
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden sm:table-cell">
                       Check In
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden md:table-cell">
                       Check Out
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden lg:table-cell">
                       Hours
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       Status
                     </th>
                   </tr>
@@ -389,21 +389,21 @@ export default function AttendanceClient() {
                 <tbody>
                   {attendanceHistory.map((record) => (
                     <tr key={record._id} className="border-b hover:bg-gray-50 dark:hover:bg-[hsl(var(--muted))]">
-                      <td className="py-3 px-4">{formatDate(record.date)}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">{formatDate(record.date)}</td>
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden sm:table-cell">
                         {formatDateTime(record.checkIn)}
                         {record.isLate && (
-                          <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                          <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                             (Late)
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden md:table-cell">
                         {record.checkOut ? (
                           <>
                             {formatDateTime(record.checkOut)}
                             {record.isEarlyExit && (
-                              <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                              <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                                 (Early)
                               </span>
                             )}
@@ -412,12 +412,12 @@ export default function AttendanceClient() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden lg:table-cell">
                         {record.workingHours
                           ? formatWorkingHours(record.workingHours)
                           : '-'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
                         {getStatusBadge(record.status, record.isLate, record.isEarlyExit)}
                       </td>
                     </tr>

@@ -117,35 +117,40 @@ export default function EmployeeDashboardClient() {
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="flex gap-4 flex-wrap">
-        <Button asChild>
+      <div className="flex gap-2 sm:gap-4 flex-wrap">
+        <Button asChild size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/employee/appraisals">
-            <FileText className="h-4 w-4 mr-2" />
-            My Appraisals
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">My Appraisals</span>
+            <span className="xs:hidden">Appraisals</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/employee/goals">
-            <Target className="h-4 w-4 mr-2" />
-            View Goals
+            <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">View Goals</span>
+            <span className="sm:hidden">Goals</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/employee/leave">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Leave Management
+            <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Leave Management</span>
+            <span className="sm:hidden">Leave</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/employee/work-reports">
-            <ClipboardCheck className="h-4 w-4 mr-2" />
-            Work Reports
+            <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Work Reports</span>
+            <span className="sm:hidden">Work</span>
           </Link>
         </Button>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm">
           <Link href="/dashboard/employee/attendance">
-            <UserCheck className="h-4 w-4 mr-2" />
-            Attendance
+            <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Attendance</span>
+            <span className="sm:hidden">Attend</span>
           </Link>
         </Button>
       </div>
@@ -179,7 +184,7 @@ export default function EmployeeDashboardClient() {
       </div>
 
       {/* Leave, Work Reports & Attendance Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Pending Leaves"
           value={stats.leaves.pending}
@@ -259,7 +264,7 @@ export default function EmployeeDashboardClient() {
               <CardDescription>Your rating history</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
                 <LineChart data={stats.ratingTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="cycle" />
@@ -319,15 +324,15 @@ export default function EmployeeDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/employee/appraisals">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                 My Appraisals
               </CardTitle>
-              <CardDescription>View and submit your self-assessments</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">View and submit your self-assessments</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Appraisals <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Appraisals <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -343,8 +348,8 @@ export default function EmployeeDashboardClient() {
               <CardDescription>Apply for leave and check your balance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                Go to Leaves <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                Go to Leaves <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>
@@ -353,11 +358,11 @@ export default function EmployeeDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/employee/work-reports">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                 Work Reports
               </CardTitle>
-              <CardDescription>Submit and view your work reports</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Submit and view your work reports</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
@@ -370,11 +375,11 @@ export default function EmployeeDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/employee/attendance">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
                 Attendance
               </CardTitle>
-              <CardDescription>Check in/out and view attendance</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Check in/out and view attendance</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
@@ -387,15 +392,15 @@ export default function EmployeeDashboardClient() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/dashboard/employee/performance-history">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                 Performance History
               </CardTitle>
-              <CardDescription>View your complete performance history</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">View your complete performance history</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                View History <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium text-xs sm:text-sm">
+                View History <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </div>
             </CardContent>
           </Link>

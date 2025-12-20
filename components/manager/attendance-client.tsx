@@ -124,12 +124,12 @@ export default function ManagerAttendanceClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
           Team Attendance
         </h1>
-        <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-2">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-1 sm:mt-2">
           View and monitor your team's attendance records
         </p>
       </div>
@@ -137,42 +137,44 @@ export default function ManagerAttendanceClient() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 Start Date
               </label>
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 End Date
               </label>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+            <div className="sm:col-span-2 md:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 Search Employee
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                 <Input
                   type="text"
                   placeholder="Search by name, ID, or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -191,8 +193,8 @@ export default function ManagerAttendanceClient() {
         Object.values(groupedByEmployee).map(({ employee, records }) => (
           <Card key={employee._id}>
             <CardHeader>
-              <CardTitle>{employee.name}</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">{employee.name}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm break-words">
                 {employee.employeeId} • {employee.email} • {records.length} record(s)
               </CardDescription>
             </CardHeader>
@@ -201,19 +203,19 @@ export default function ManagerAttendanceClient() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                         Date
                       </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden sm:table-cell">
                         Check In
                       </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden md:table-cell">
                         Check Out
                       </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden lg:table-cell">
                         Hours
                       </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                         Status
                       </th>
                     </tr>
@@ -224,21 +226,21 @@ export default function ManagerAttendanceClient() {
                         key={record._id}
                         className="border-b hover:bg-gray-50 dark:hover:bg-[hsl(var(--muted))]"
                       >
-                        <td className="py-3 px-4">{formatDate(record.date)}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">{formatDate(record.date)}</td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden sm:table-cell">
                           {formatDateTime(record.checkIn)}
                           {record.isLate && (
-                            <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                            <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                               (Late)
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden md:table-cell">
                           {record.checkOut ? (
                             <>
                               {formatDateTime(record.checkOut)}
                               {record.isEarlyExit && (
-                                <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                                <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                                   (Early)
                                 </span>
                               )}
@@ -247,10 +249,10 @@ export default function ManagerAttendanceClient() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden lg:table-cell">
                           {record.workingHours ? formatWorkingHours(record.workingHours) : '-'}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
                           {getStatusBadge(record.status, record.isLate, record.isEarlyExit)}
                         </td>
                       </tr>

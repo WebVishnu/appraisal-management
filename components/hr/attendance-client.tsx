@@ -259,18 +259,18 @@ export default function HRAttendanceClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">
             Attendance Management
           </h1>
-          <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-2">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-1 sm:mt-2">
             View and manage organization-wide attendance records
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+          <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
           Create Record
         </Button>
       </div>
@@ -278,16 +278,16 @@ export default function HRAttendanceClient() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 Employee
               </label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                <SelectTrigger>
+                <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="All Employees" />
                 </SelectTrigger>
                 <SelectContent>
@@ -301,37 +301,39 @@ export default function HRAttendanceClient() {
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 Start Date
               </label>
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 End Date
               </label>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
+            <div className="sm:col-span-2 md:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-[hsl(var(--foreground))] mb-1">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                 <Input
                   type="text"
                   placeholder="Search by name, ID, or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -342,12 +344,12 @@ export default function HRAttendanceClient() {
       {/* Attendance Records */}
       <Card>
         <CardHeader>
-          <CardTitle>Attendance Records</CardTitle>
-          <CardDescription>{filteredAttendance.length} record(s) found</CardDescription>
+          <CardTitle className="text-base sm:text-lg">Attendance Records</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">{filteredAttendance.length} record(s) found</CardDescription>
         </CardHeader>
         <CardContent>
           {filteredAttendance.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+            <div className="text-center py-6 sm:py-8 text-xs sm:text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
               No attendance records found
             </div>
           ) : (
@@ -355,25 +357,25 @@ export default function HRAttendanceClient() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       Employee
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden md:table-cell">
                       Date
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden lg:table-cell">
                       Check In
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden lg:table-cell">
                       Check Out
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))] hidden xl:table-cell">
                       Hours
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       Status
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
                       Actions
                     </th>
                   </tr>
@@ -384,29 +386,29 @@ export default function HRAttendanceClient() {
                       key={record._id}
                       className="border-b hover:bg-gray-50 dark:hover:bg-[hsl(var(--muted))]"
                     >
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4">
                         <div>
-                          <div className="font-medium">{record.employeeId.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
+                          <div className="font-medium text-xs sm:text-sm">{record.employeeId.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
                             {record.employeeId.employeeId}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4">{formatDate(record.date)}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden md:table-cell">{formatDate(record.date)}</td>
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden lg:table-cell">
                         {formatDateTime(record.checkIn)}
                         {record.isLate && (
-                          <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                          <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                             (Late)
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden lg:table-cell">
                         {record.checkOut ? (
                           <>
                             {formatDateTime(record.checkOut)}
                             {record.isEarlyExit && (
-                              <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                              <span className="ml-1 sm:ml-2 text-xs text-yellow-600 dark:text-yellow-400">
                                 (Early)
                               </span>
                             )}
@@ -415,24 +417,25 @@ export default function HRAttendanceClient() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm hidden xl:table-cell">
                         {record.workingHours ? formatWorkingHours(record.workingHours) : '-'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
                         {getStatusBadge(record.status, record.isLate, record.isEarlyExit)}
                         {record.correctedBy && (
-                          <div className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))] mt-1">
+                          <div className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))] mt-1 break-all">
                             Corrected by {record.correctedBy.email}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 sm:py-3 px-2 sm:px-4">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(record)}
+                          className="h-7 w-7 sm:h-8 sm:w-8"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </td>
                     </tr>
@@ -446,31 +449,32 @@ export default function HRAttendanceClient() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Edit Attendance Record</DialogTitle>
-            <DialogDescription>Update attendance details manually</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Attendance Record</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Update attendance details manually</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-3 sm:gap-4 py-2 sm:py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Date</Label>
+                <Label className="text-xs sm:text-sm">Date</Label>
                 <Input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   disabled
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label>Status</Label>
+                <Label className="text-xs sm:text-sm">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: any) =>
                     setFormData({ ...formData, status: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -482,57 +486,60 @@ export default function HRAttendanceClient() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Check In</Label>
+                <Label className="text-xs sm:text-sm">Check In</Label>
                 <Input
                   type="datetime-local"
                   value={formData.checkIn}
                   onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label>Check Out</Label>
+                <Label className="text-xs sm:text-sm">Check Out</Label>
                 <Input
                   type="datetime-local"
                   value={formData.checkOut}
                   onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
+                  className="text-xs sm:text-sm"
                 />
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label className="text-xs sm:text-sm">Notes</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Add any notes about this attendance record..."
+                className="text-xs sm:text-sm"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Attendance Record</DialogTitle>
-            <DialogDescription>Manually create a new attendance record</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Attendance Record</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Manually create a new attendance record</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 sm:gap-4 py-2 sm:py-4">
             <div>
-              <Label>Employee</Label>
+              <Label className="text-xs sm:text-sm">Employee</Label>
               <Select
                 value={formData.employeeId}
                 onValueChange={(value) => setFormData({ ...formData, employeeId: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
@@ -544,24 +551,25 @@ export default function HRAttendanceClient() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Date</Label>
+                <Label className="text-xs sm:text-sm">Date</Label>
                 <Input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label>Status</Label>
+                <Label className="text-xs sm:text-sm">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: any) =>
                     setFormData({ ...formData, status: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -573,39 +581,42 @@ export default function HRAttendanceClient() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Check In</Label>
+                <Label className="text-xs sm:text-sm">Check In</Label>
                 <Input
                   type="datetime-local"
                   value={formData.checkIn}
                   onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
                   required
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label>Check Out (Optional)</Label>
+                <Label className="text-xs sm:text-sm">Check Out (Optional)</Label>
                 <Input
                   type="datetime-local"
                   value={formData.checkOut}
                   onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
+                  className="text-xs sm:text-sm"
                 />
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label className="text-xs sm:text-sm">Notes</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Add any notes about this attendance record..."
+                className="text-xs sm:text-sm"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               Cancel
             </Button>
-            <Button onClick={handleSave}>Create Record</Button>
+            <Button onClick={handleSave} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">Create Record</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

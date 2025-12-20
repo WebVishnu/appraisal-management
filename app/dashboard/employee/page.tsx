@@ -11,9 +11,9 @@ export default async function EmployeeDashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">Employee Dashboard</h1>
-        <p className="text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-2">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-[hsl(var(--foreground))]">Employee Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-[hsl(var(--muted-foreground))] mt-1 sm:mt-2">
           View your appraisals and submit self-assessments
         </p>
       </div>

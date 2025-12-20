@@ -443,34 +443,34 @@ export default function OnboardingDashboardClient() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Employee Onboarding</h1>
-          <p className="text-muted-foreground">Manage employee onboarding requests and track progress</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Employee Onboarding</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage employee onboarding requests and track progress</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Create Onboarding Request
+        <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+          <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="text-xs sm:text-sm">Create Onboarding Request</span>
         </Button>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-7">
+      <div className="grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Invited</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Invited</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{counts.invited || 0}</p>
+            <p className="text-xl sm:text-2xl font-bold">{counts.invited || 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">In Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{counts.in_progress || 0}</p>
+            <p className="text-xl sm:text-2xl font-bold">{counts.in_progress || 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -517,8 +517,8 @@ export default function OnboardingDashboardClient() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-4">
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <div>
               <Label>Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -553,12 +553,13 @@ export default function OnboardingDashboardClient() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="md:col-span-2">
-              <Label>Search</Label>
+            <div className="sm:col-span-2 md:col-span-2">
+              <Label className="text-xs sm:text-sm">Search</Label>
               <Input
                 placeholder="Search by name, email, or onboarding ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
           </div>
@@ -584,20 +585,20 @@ export default function OnboardingDashboardClient() {
                   key={request._id}
                   className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+                    <div className="flex-1 w-full sm:w-auto">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <h3 className="font-semibold text-sm sm:text-base">
                           {request.firstName} {request.lastName}
                         </h3>
                         <Badge className={getStatusColor(request.status)}>
-                          {request.status.replace('_', ' ')}
+                          <span className="text-xs">{request.status.replace('_', ' ')}</span>
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs sm:text-sm text-muted-foreground break-all">
                           {request.onboardingId}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-xs sm:text-sm text-muted-foreground">
                         <div>
                           <span className="font-medium">Email:</span> {request.email}
                         </div>
@@ -638,39 +639,42 @@ export default function OnboardingDashboardClient() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2 ml-4">
+                    <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto sm:ml-4 flex-wrap">
                       {request.status === 'submitted' && (
                         <>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleAction(request, 'view')}
+                            className="text-xs"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden xs:inline">View</span>
                           </Button>
                           <Button
                             size="sm"
                             onClick={() => handleAction(request, 'approve')}
+                            className="text-xs"
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
+                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden xs:inline">Approve</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleAction(request, 'request_changes')}
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Request Changes
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden xs:inline">Request Changes</span>
+                            <span className="xs:hidden">Changes</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleAction(request, 'reject')}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
+                            <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden xs:inline">Reject</span>
                           </Button>
                         </>
                       )}
@@ -681,16 +685,18 @@ export default function OnboardingDashboardClient() {
                             variant="outline"
                             onClick={() => handleSendReminder(request)}
                           >
-                            <Send className="h-4 w-4 mr-1" />
-                            Send Reminder ({request.reminderCount || 0})
+                            <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">Send Reminder ({request.reminderCount || 0})</span>
+                            <span className="sm:hidden">Remind</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleRegenerateToken(request)}
                           >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Regenerate Link
+                            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">Regenerate Link</span>
+                            <span className="sm:hidden">Regenerate</span>
                           </Button>
                         </>
                       )}
@@ -724,13 +730,13 @@ export default function OnboardingDashboardClient() {
 
       {/* Create Onboarding Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Create Onboarding Request</DialogTitle>
-            <DialogDescription>Initiate onboarding for a new employee</DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Create Onboarding Request</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">Initiate onboarding for a new employee</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>First Name *</Label>
                 <Input
@@ -858,16 +864,16 @@ export default function OnboardingDashboardClient() {
 
       {/* Action Dialog (Reject/Request Changes) */}
       <Dialog open={isActionDialogOpen} onOpenChange={setIsActionDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
               {actionType === 'reject'
                 ? 'Reject Onboarding'
                 : actionType === 'request_changes'
                 ? 'Request Changes'
                 : 'Onboarding Details'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {actionType === 'reject'
                 ? 'Please provide a reason for rejection'
                 : actionType === 'request_changes'
