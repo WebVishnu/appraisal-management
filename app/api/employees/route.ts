@@ -13,6 +13,7 @@ const createEmployeeSchema = z.object({
   role: z.string().min(1),
   managerId: z.string().optional(),
   password: z.string().min(6).optional(),
+  isManager: z.boolean().optional(), // Flag to create as manager
 });
 
 const updateEmployeeSchema = z.object({
@@ -100,14 +101,18 @@ export async function POST(req: NextRequest) {
     });
 
     // Create User account for the employee
-    // Generate default password if not provided: employeeId@123
-    const defaultPassword = validatedData.password || `${validatedData.employeeId}@123`;
+    // Generate random 7-digit password if not provided
+    const defaultPassword = validatedData.password || Math.floor(1000000 + Math.random() * 9000000).toString();
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Determine user role based on employee role
+    // Determine user role based on employee role and isManager flag
     let userRole: 'employee' | 'manager' | 'hr' | 'super_admin' = 'employee';
     const roleLower = validatedData.role.toLowerCase();
-    if (roleLower.includes('admin') || roleLower.includes('super')) {
+    
+    // If isManager flag is set, assign manager role
+    if (validatedData.isManager) {
+      userRole = 'manager';
+    } else if (roleLower.includes('admin') || roleLower.includes('super')) {
       userRole = 'super_admin';
     } else if (roleLower.includes('hr') || roleLower.includes('human resource')) {
       userRole = 'hr';

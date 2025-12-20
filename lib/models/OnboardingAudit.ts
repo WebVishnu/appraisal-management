@@ -13,7 +13,8 @@ export type OnboardingAuditAction =
   | 'token_regenerated'
   | 'employee_activated'
   | 'manager_acknowledged'
-  | 'hr_updated_submission';
+  | 'hr_updated_submission'
+  | 'onboarding_deleted';
 
 export interface IOnboardingAudit extends Document {
   onboardingRequestId: mongoose.Types.ObjectId;
@@ -58,6 +59,7 @@ const OnboardingAuditSchema = new Schema<IOnboardingAudit>(
         'employee_activated',
         'manager_acknowledged',
         'hr_updated_submission',
+        'onboarding_deleted',
       ],
       required: true,
       index: true,

@@ -1,15 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -19,6 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -28,10 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import Link from 'next/link';
-import { Eye } from 'lucide-react';
+import { Eye, MoreVertical, Edit, Trash2, Power, Search, UserPlus, X } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/status-badge';
+import { DataTable, DataTableColumn } from '@/components/shared/data-table';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Employee {
   _id: string;
@@ -45,9 +47,11 @@ interface Employee {
     employeeId: string;
   };
   isActive: boolean;
+  createdAt?: string;
 }
 
 export default function EmployeeManagementClient() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,8 +64,12 @@ export default function EmployeeManagementClient() {
     role: '',
     managerId: '',
     password: '',
+    isManager: false, // New field to create as manager
   });
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchEmployees();
@@ -99,12 +107,13 @@ export default function EmployeeManagementClient() {
 
   const handleCreate = () => {
     setEditingEmployee(null);
-    setFormData({ employeeId: '', name: '', email: '', role: '', managerId: 'none', password: '' });
+    setFormData({ employeeId: '', name: '', email: '', role: '', managerId: 'none', password: '', isManager: false });
     setCreatedPassword(null);
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (employee: Employee) => {
+  const handleEdit = (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation();
     setEditingEmployee(employee);
     setFormData({
       employeeId: employee.employeeId,
@@ -113,12 +122,23 @@ export default function EmployeeManagementClient() {
       role: employee.role,
       managerId: employee.managerId?._id || 'none',
       password: '',
+      isManager: false, // Not applicable for editing
     });
     setCreatedPassword(null);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleView = (e: React.MouseEvent, employeeId: string) => {
+    e.stopPropagation();
+    router.push(`/dashboard/hr/employees/${employeeId}`);
+  };
+
+  const handleRowClick = (employee: Employee) => {
+    router.push(`/dashboard/hr/employees/${employee._id}`);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!confirm('Are you sure you want to delete this employee?')) {
       return;
     }
@@ -139,7 +159,8 @@ export default function EmployeeManagementClient() {
     }
   };
 
-  const handleToggleActive = async (employee: Employee) => {
+  const handleToggleActive = async (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation();
     try {
       const response = await fetch('/api/employees', {
         method: 'PUT',
@@ -161,15 +182,124 @@ export default function EmployeeManagementClient() {
     }
   };
 
+  const isNewEmployee = (employee: Employee): boolean => {
+    if (!employee.createdAt) return false;
+    const createdAt = new Date(employee.createdAt);
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    return createdAt >= fiveDaysAgo;
+  };
+
+  const columns: DataTableColumn<Employee>[] = [
+    {
+      key: 'employeeId',
+      header: 'Employee ID',
+    },
+    {
+      key: 'name',
+      header: 'Name',
+      render: (employee) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{employee.name}</span>
+          {isNewEmployee(employee) && (
+            <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-xs">
+              NEW
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+    },
+    {
+      key: 'role',
+      header: 'Role',
+    },
+    {
+      key: 'managerId',
+      header: 'Manager',
+      render: (employee) => (
+        <span>{employee.managerId ? employee.managerId.name : '-'}</span>
+      ),
+    },
+    {
+      key: 'isActive',
+      header: 'Status',
+      render: (employee) => (
+        <StatusBadge status={employee.isActive ? 'active' : 'inactive'} />
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      className: 'w-[50px]',
+      render: (employee) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => handleView(e, employee._id)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => handleEdit(e, employee)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => handleToggleActive(e, employee)}>
+              <Power className="h-4 w-4 mr-2" />
+              {employee.isActive ? 'Deactivate' : 'Activate'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => handleDelete(e, employee._id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const url = '/api/employees';
       const method = editingEmployee ? 'PUT' : 'POST';
+      
+      // If creating as manager, ensure role includes "Manager"
+      let role = formData.role;
+      if (!editingEmployee && formData.isManager && !role.toLowerCase().includes('manager')) {
+        role = role ? `${role} Manager` : 'Manager';
+      }
+      
       const body = editingEmployee
-        ? { id: editingEmployee._id, ...formData, managerId: formData.managerId === 'none' || !formData.managerId ? null : formData.managerId }
-        : { ...formData, managerId: formData.managerId === 'none' || !formData.managerId ? null : formData.managerId };
+        ? { 
+            id: editingEmployee._id, 
+            employeeId: formData.employeeId,
+            name: formData.name,
+            email: formData.email,
+            role: formData.role,
+            managerId: formData.managerId === 'none' || !formData.managerId ? null : formData.managerId 
+          }
+        : { 
+            employeeId: formData.employeeId,
+            name: formData.name,
+            email: formData.email,
+            role: role,
+            managerId: formData.managerId === 'none' || !formData.managerId ? null : formData.managerId,
+            password: formData.password || undefined,
+            isManager: formData.isManager
+          };
 
       const response = await fetch(url, {
         method,
@@ -181,12 +311,13 @@ export default function EmployeeManagementClient() {
         const data = await response.json();
         if (!editingEmployee && data.defaultPassword) {
           setCreatedPassword(data.defaultPassword);
-          toast.success(`Employee created successfully! Default password: ${data.defaultPassword}`, { duration: 10000 });
+          toast.success(`Employee${formData.isManager ? ' (Manager)' : ''} created successfully! Default password: ${data.defaultPassword}`, { duration: 10000 });
         } else {
           toast.success(editingEmployee ? 'Employee updated successfully' : 'Employee created successfully');
           setIsDialogOpen(false);
           fetchEmployees();
-          setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '' });
+          fetchManagers(); // Refresh managers list
+          setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '', isManager: false });
         }
       } else {
         const error = await response.json();
@@ -196,6 +327,29 @@ export default function EmployeeManagementClient() {
       toast.error('Error saving employee');
     }
   };
+
+  // Filter employees based on search and filters
+  const filteredEmployees = employees.filter((employee) => {
+    const matchesSearch = 
+      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.role.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === 'all' || 
+      (statusFilter === 'active' && employee.isActive) ||
+      (statusFilter === 'inactive' && !employee.isActive);
+    
+    const matchesRole = 
+      roleFilter === 'all' || 
+      employee.role.toLowerCase().includes(roleFilter.toLowerCase());
+    
+    return matchesSearch && matchesStatus && matchesRole;
+  });
+
+  // Get unique roles for filter
+  const uniqueRoles = Array.from(new Set(employees.map(emp => emp.role))).sort();
 
   if (loading) {
     return (
@@ -221,7 +375,10 @@ export default function EmployeeManagementClient() {
   return (
     <div>
       <div className="mb-4 flex justify-between items-center">
-        <Button onClick={handleCreate}>Create New Employee</Button>
+        <Button onClick={handleCreate} className="cursor-pointer">
+          <UserPlus className="h-4 w-4 mr-2" />
+          Create New Employee
+        </Button>
       </div>
 
       <Card>
@@ -230,77 +387,72 @@ export default function EmployeeManagementClient() {
           <CardDescription>Manage all employees in the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Manager</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center">
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                employees.map((employee) => (
-                  <TableRow key={employee._id}>
-                    <TableCell>{employee.employeeId}</TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/hr/employees/${employee._id}`}
-                        className="text-blue-600 hover:underline font-medium"
-                      >
-                        {employee.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell>{employee.role}</TableCell>
-                    <TableCell>
-                      {employee.managerId ? employee.managerId.name : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={employee.isActive ? 'active' : 'inactive'} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/dashboard/hr/employees/${employee._id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Link>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(employee)}>
-                          Edit
-                        </Button>
-                        <Button
-                          variant={employee.isActive ? 'secondary' : 'default'}
-                          size="sm"
-                          onClick={() => handleToggleActive(employee)}
-                        >
-                          {employee.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(employee._id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          {/* Search and Filter Section */}
+          <div className="mb-4 space-y-4">
+            <div className="flex gap-4 flex-wrap">
+              {/* Search */}
+              <div className="flex-1 min-w-[250px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, ID, or role..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Role Filter */}
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {uniqueRoles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Results count */}
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredEmployees.length} of {employees.length} employees
+            </div>
+          </div>
+
+          <DataTable
+            data={filteredEmployees}
+            columns={columns}
+            onRowClick={handleRowClick}
+            emptyMessage="No employees found"
+          />
         </CardContent>
       </Card>
 
@@ -375,20 +527,37 @@ export default function EmployeeManagementClient() {
                 </div>
               </div>
               {!editingEmployee && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password (Optional)</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Leave empty for default: {EmployeeID}@123"
-                    minLength={6}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    If left empty, default password will be: <span className="font-mono">{formData.employeeId || 'EMPLOYEEID'}@123</span>
-                  </p>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password (Optional)</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Leave empty for random 7-digit password"
+                      minLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If left empty, a random 7-digit password will be generated
+                    </p>
+                  </div>
+                  
+                  {/* Create as Manager Option */}
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg bg-muted/50">
+                    <Checkbox
+                      id="isManager"
+                      checked={formData.isManager}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isManager: checked as boolean })}
+                    />
+                    <Label htmlFor="isManager" className="cursor-pointer font-medium">
+                      Create as Manager
+                    </Label>
+                    <p className="text-xs text-muted-foreground ml-2">
+                      (Will have manager role and permissions)
+                    </p>
+                  </div>
+                </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="managerId">Manager (Optional)</Label>
@@ -417,7 +586,7 @@ export default function EmployeeManagementClient() {
                 onClick={() => {
                   setIsDialogOpen(false);
                   setCreatedPassword(null);
-                  setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '' });
+                  setFormData({ employeeId: '', name: '', email: '', role: '', managerId: '', password: '', isManager: false });
                 }}
               >
                 {createdPassword ? 'Close' : 'Cancel'}

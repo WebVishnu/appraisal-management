@@ -113,6 +113,7 @@ export interface IPoliciesDeclarations {
 
 export interface IOnboardingSubmission extends Document {
   onboardingRequestId: mongoose.Types.ObjectId;
+  employeeId?: mongoose.Types.ObjectId; // Link to employee after approval
   
   // Step completion tracking
   stepsCompleted: {
@@ -324,6 +325,12 @@ const OnboardingSubmissionSchema = new Schema<IOnboardingSubmission>(
       ref: 'OnboardingRequest',
       required: true,
       unique: true,
+      index: true,
+    },
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee',
+      default: null,
       index: true,
     },
     stepsCompleted: {

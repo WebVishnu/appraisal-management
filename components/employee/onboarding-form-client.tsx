@@ -178,8 +178,20 @@ export default function OnboardingFormClient() {
             reportingManagerId: employmentDetails.reportingManagerId || data.request.reportingManagerId?._id || data.request.reportingManagerId || null,
           };
 
+          // Merge personal details with request data (auto-fill if not already filled)
+          const personalDetails = data.submission.personalDetails || {};
+          const mergedPersonalDetails = {
+            ...personalDetails,
+            // Auto-fill from request if not already in submission
+            fullName: personalDetails.fullName || (data.request.firstName && data.request.lastName 
+              ? `${data.request.firstName} ${data.request.lastName}`.trim()
+              : ''),
+            mobileNumber: personalDetails.mobileNumber || data.request.mobileNumber || '',
+            personalEmail: personalDetails.personalEmail || data.request.personalEmail || data.request.email || '',
+          };
+
           setFormData({
-            personalDetails: data.submission.personalDetails || {},
+            personalDetails: mergedPersonalDetails,
             addressDetails: data.submission.addressDetails || {},
             identityKYC: data.submission.identityKYC || {},
             employmentDetails: mergedEmploymentDetails,
@@ -191,9 +203,16 @@ export default function OnboardingFormClient() {
             policiesDeclarations: data.submission.policiesDeclarations || {},
           });
         } else if (data.request) {
-          // If no submission exists yet, initialize with request data
+          // If no submission exists yet, initialize with request data and auto-fill available fields
           setFormData({
-            personalDetails: {},
+            personalDetails: {
+              // Auto-fill from request if available
+              fullName: data.request.firstName && data.request.lastName 
+                ? `${data.request.firstName} ${data.request.lastName}`.trim()
+                : '',
+              mobileNumber: data.request.mobileNumber || '',
+              personalEmail: data.request.personalEmail || data.request.email || '',
+            },
             addressDetails: {},
             identityKYC: {},
             employmentDetails: {

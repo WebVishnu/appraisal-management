@@ -36,6 +36,7 @@ import {
   Edit,
   Copy,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { formatDate, formatErrorMessage } from '@/lib/utils/format';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
@@ -90,7 +91,7 @@ export default function OnboardingDashboardClient() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_changes' | 'view' | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_changes' | 'view' | 'delete' | null>(null);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -139,7 +140,11 @@ export default function OnboardingDashboardClient() {
       const response = await fetch(`/api/onboarding?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setRequests(data.requests || []);
+        // Filter out 100% completed onboarding requests (exclude those that are both 100% and status completed)
+        const filteredRequests = (data.requests || []).filter((req: OnboardingRequest) => 
+          !(req.progressPercentage === 100 && req.status === 'completed')
+        );
+        setRequests(filteredRequests);
         setCounts(data.counts || {});
         
         // Extract unique departments
@@ -219,13 +224,38 @@ export default function OnboardingDashboardClient() {
     }
   };
 
-  const handleAction = async (request: OnboardingRequest, action: 'approve' | 'reject' | 'request_changes' | 'view') => {
+  const handleAction = async (request: OnboardingRequest, action: 'approve' | 'reject' | 'request_changes' | 'view' | 'delete') => {
     setSelectedRequest(request);
     setActionType(action);
     
     if (action === 'view') {
       // Navigate to onboarding form page with token
       window.location.href = `/onboarding/${request.token}`;
+      return;
+    }
+
+    if (action === 'delete') {
+      // Confirm deletion
+      if (!confirm(`Are you sure you want to delete the onboarding request for ${request.firstName} ${request.lastName}? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/onboarding/${request._id}`, {
+          method: 'DELETE',
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('Onboarding request deleted successfully');
+          fetchOnboardingRequests();
+        } else {
+          toast.error(formatErrorMessage(data.error, 'Failed to delete onboarding request'));
+        }
+      } catch (error: any) {
+        toast.error(formatErrorMessage(error, 'Failed to delete onboarding request'));
+      }
       return;
     }
 
@@ -674,6 +704,15 @@ export default function OnboardingDashboardClient() {
                           View
                         </Button>
                       )}
+                      {/* Delete button - available for all statuses */}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleAction(request, 'delete')}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 </div>

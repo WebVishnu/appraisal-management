@@ -16,7 +16,6 @@ import mongoose from 'mongoose';
 import { getAssignedShift } from '@/lib/utils/shift';
 import { z } from 'zod';
 import User from '@/lib/models/User';
-import OnboardingRequest from '@/lib/models/OnboardingRequest';
 import OnboardingSubmission from '@/lib/models/OnboardingSubmission';
 
 const updateEmployeeSchema = z.object({
@@ -332,18 +331,41 @@ export async function GET(
       .select('startDate endDate leaveType')
       .sort({ startDate: 1 });
 
-    // Get onboarding submission data
+    // Get onboarding submission data (linked directly to employee)
     let onboardingSubmission = null;
     try {
-      const onboardingRequest = await OnboardingRequest.findOne({
+      // Query using raw MongoDB collection to find by employeeId
+      // (Mongoose queries might not work if field was set via collection.updateOne)
+      const submissionDoc = await OnboardingSubmission.collection.findOne({
         employeeId: new mongoose.Types.ObjectId(employeeId),
       });
-
-      if (onboardingRequest) {
-        const submission = await OnboardingSubmission.findOne({
-          onboardingRequestId: onboardingRequest._id,
+      
+      if (submissionDoc) {
+        // Convert raw document to Mongoose document format
+        onboardingSubmission = await OnboardingSubmission.findById(submissionDoc._id).lean();
+      } else {
+        // Fallback: try to find by onboardingRequestId through OnboardingRequest
+        // (for backwards compatibility with employees created before employeeId linking)
+        const OnboardingRequest = (await import('@/lib/models/OnboardingRequest')).default;
+        const onboardingRequest = await OnboardingRequest.findOne({
+          employeeId: new mongoose.Types.ObjectId(employeeId),
         }).lean();
-        onboardingSubmission = submission;
+        
+        if (onboardingRequest) {
+          const fallbackDoc = await OnboardingSubmission.collection.findOne({
+            onboardingRequestId: onboardingRequest._id,
+          });
+          
+          if (fallbackDoc) {
+            onboardingSubmission = await OnboardingSubmission.findById(fallbackDoc._id).lean();
+            
+            // Update it to link to employeeId for future queries using collection.updateOne
+            await OnboardingSubmission.collection.updateOne(
+              { _id: fallbackDoc._id },
+              { $set: { employeeId: new mongoose.Types.ObjectId(employeeId) } }
+            );
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching onboarding data:', error);

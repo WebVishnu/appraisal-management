@@ -79,27 +79,48 @@ export async function POST(
         break;
 
       case 'addressDetails':
-        if (!data.currentAddress || !data.permanentAddress) {
-          validationErrors.push({ step, field: 'required', message: 'Both current and permanent addresses are required' });
+        if (!data.currentAddress) {
+          validationErrors.push({ step, field: 'required', message: 'Current address is required' });
         }
-        if (data.currentAddress && !data.currentAddress.pincode) {
-          validationErrors.push({ step, field: 'currentAddress.pincode', message: 'Pincode is required' });
+        // Validate current address required fields
+        if (data.currentAddress) {
+          if (!data.currentAddress.line1 || !data.currentAddress.city || !data.currentAddress.state || !data.currentAddress.pincode) {
+            validationErrors.push({ step, field: 'currentAddress', message: 'All current address fields (line1, city, state, pincode) are required' });
+          }
         }
         if (validationErrors.length === 0) {
-          // Ensure country is set for both addresses (default to 'India' if not provided)
-          const addressData = {
-            ...data,
-            currentAddress: {
-              ...data.currentAddress,
-              country: data.currentAddress?.country || 'India',
-            },
-            permanentAddress: {
-              ...data.permanentAddress,
-              country: data.permanentAddress?.country || 'India',
-            },
+          // Ensure country is set for current address (default to 'India' if not provided)
+          const currentAddress = {
+            ...data.currentAddress,
+            country: data.currentAddress?.country || 'India',
           };
-          submission.addressDetails = addressData;
-          submission.stepsCompleted.addressDetails = true;
+          
+          // If sameAsCurrent is true, copy current address to permanent address
+          // Otherwise, use the provided permanentAddress or default to current address
+          let permanentAddress;
+          if (data.sameAsCurrent) {
+            permanentAddress = { ...currentAddress };
+          } else {
+            // Validate permanent address if sameAsCurrent is false
+            if (!data.permanentAddress || !data.permanentAddress.line1 || !data.permanentAddress.city || !data.permanentAddress.state || !data.permanentAddress.pincode) {
+              validationErrors.push({ step, field: 'permanentAddress', message: 'All permanent address fields (line1, city, state, pincode) are required when not same as current address' });
+            } else {
+              permanentAddress = {
+                ...data.permanentAddress,
+                country: data.permanentAddress?.country || 'India',
+              };
+            }
+          }
+          
+          if (validationErrors.length === 0) {
+            const addressData = {
+              currentAddress,
+              permanentAddress,
+              sameAsCurrent: data.sameAsCurrent || false,
+            };
+            submission.addressDetails = addressData;
+            submission.stepsCompleted.addressDetails = true;
+          }
         }
         break;
 

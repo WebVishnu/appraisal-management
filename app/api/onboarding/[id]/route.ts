@@ -169,8 +169,8 @@ export async function PUT(
         isActive: true,
       });
 
-      // Create User account
-      const defaultPassword = `${employeeId}@123`;
+      // Create User account with random 7-digit password
+      const defaultPassword = Math.floor(1000000 + Math.random() * 9000000).toString(); // Random 7-digit number
       const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
       // Determine user role
@@ -235,15 +235,26 @@ export async function PUT(
         });
       }
 
-      // Update onboarding request
-      request.status = 'approved';
-      request.approvedAt = new Date();
-      request.approvedBy = createdByUserId;
-      request.employeeId = employee._id;
-      request.userId = user._id;
-      await request.save();
+      // Store request ID before deletion (needed for audit and notification)
+      const requestId = request._id.toString();
 
-      // Create audit log
+      // Link the submission to the employee before deleting the request
+      // This preserves the onboarding data for display on employee details page
+      if (submission) {
+        // Ensure employeeId is set as ObjectId
+        const employeeIdStr = employee._id.toString();
+        const employeeObjectId = new mongoose.Types.ObjectId(employeeIdStr);
+        
+        // Use direct MongoDB collection.updateOne (Mongoose updateOne doesn't work for this field)
+        await OnboardingSubmission.collection.updateOne(
+          { _id: submission._id },
+          { $set: { employeeId: employeeObjectId } }
+        );
+      } else {
+        console.error('Onboarding submission not found for request:', request._id.toString());
+      }
+
+      // Create audit log before deletion
       await OnboardingAudit.create({
         onboardingRequestId: request._id,
         action: 'onboarding_approved',
@@ -253,6 +264,7 @@ export async function PUT(
         metadata: {
           employeeId: employee._id.toString(),
           userId: user._id.toString(),
+          onboardingId: request.onboardingId,
         },
       });
 
@@ -264,12 +276,16 @@ export async function PUT(
           'Onboarding Approved',
           `Your onboarding has been approved. Your Employee ID is ${employeeId}. Default password: ${defaultPassword}`,
           '/dashboard/employee',
-          request._id.toString()
+          requestId
         );
       } catch (error) {
         console.error('Error creating notification:', error);
         // Don't fail the approval if notification fails
       }
+
+      // Delete the onboarding request (automatically after employee is created)
+      // Note: We keep the submission linked to employeeId for display purposes
+      await OnboardingRequest.findByIdAndDelete(request._id);
 
       return NextResponse.json({
         message: 'Onboarding approved successfully',
@@ -413,25 +429,101 @@ export async function PUT(
   }
 }
 
-// Helper function to generate unique employee ID
+// Helper function to generate unique employee ID (EMP + 5 random digits)
 async function generateEmployeeId(): Promise<string> {
   const prefix = 'EMP';
-  const currentYear = new Date().getFullYear().toString().slice(-2);
+  let attempts = 0;
+  const maxAttempts = 100;
   
-  // Find the latest employee ID with this prefix and year
-  const latestEmployee = await Employee.findOne({
-    employeeId: { $regex: `^${prefix}${currentYear}` },
-  })
-    .sort({ employeeId: -1 })
-    .select('employeeId');
-
-  let sequence = 1;
-  if (latestEmployee) {
-    const match = latestEmployee.employeeId.match(/\d+$/);
-    if (match) {
-      sequence = parseInt(match[0]) + 1;
+  while (attempts < maxAttempts) {
+    // Generate random 5-digit number
+    const randomDigits = Math.floor(10000 + Math.random() * 90000).toString();
+    const employeeId = `${prefix}${randomDigits}`;
+    
+    // Check if this ID already exists
+    const existing = await Employee.findOne({ employeeId });
+    if (!existing) {
+      return employeeId;
     }
+    
+    attempts++;
   }
+  
+  // Fallback: if we can't find a unique random ID, use timestamp-based approach
+  const timestamp = Date.now().toString().slice(-5);
+  return `${prefix}${timestamp}`;
+}
 
-  return `${prefix}${currentYear}${String(sequence).padStart(3, '0')}`;
+// DELETE - Delete onboarding request
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session || (session.user.role !== 'hr' && session.user.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    await connectDB();
+
+    const request = await OnboardingRequest.findById(id);
+    if (!request) {
+      return NextResponse.json({ error: 'Onboarding request not found' }, { status: 404 });
+    }
+
+    // Don't allow deletion if employee has already been created
+    if (request.employeeId) {
+      return NextResponse.json(
+        { error: 'Cannot delete onboarding request. Employee has already been created from this request.' },
+        { status: 400 }
+      );
+    }
+
+    // Get User ID for audit (before deletion)
+    let deletedByUserId: mongoose.Types.ObjectId;
+    if (session.user.id) {
+      deletedByUserId = new mongoose.Types.ObjectId(session.user.id);
+    } else {
+      const user = await User.findOne({ email: session.user.email });
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      deletedByUserId = user._id;
+    }
+
+    // Store request info for audit log before deletion
+    const requestInfo = {
+      onboardingId: request.onboardingId,
+      email: request.email,
+      firstName: request.firstName,
+      lastName: request.lastName,
+    };
+
+    // Delete related submission
+    await OnboardingSubmission.deleteMany({ onboardingRequestId: request._id });
+
+    // Create audit log before deleting the request (so we can reference the ID)
+    await OnboardingAudit.create({
+      onboardingRequestId: request._id,
+      action: 'onboarding_deleted',
+      performedBy: deletedByUserId,
+      performedAt: new Date(),
+      description: `Onboarding request deleted for ${requestInfo.firstName} ${requestInfo.lastName} (${requestInfo.email})`,
+      metadata: {
+        onboardingId: requestInfo.onboardingId,
+        email: requestInfo.email,
+      },
+    });
+
+    // Delete the onboarding request (this will cascade or we handle related data above)
+    await OnboardingRequest.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: 'Onboarding request deleted successfully' });
+  } catch (error: any) {
+    console.error('Error deleting onboarding request:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

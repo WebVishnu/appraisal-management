@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  ArrowLeft,
   Mail,
   User,
   Calendar,
@@ -167,6 +166,9 @@ export default function EmployeeDetailsClient() {
   const [activeTab, setActiveTab] = useState('profile');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState<any>({});
+  const [managerDialogOpen, setManagerDialogOpen] = useState(false);
+  const [availableManagers, setAvailableManagers] = useState<Employee[]>([]);
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   
   // Assignment modal state
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
@@ -320,6 +322,56 @@ export default function EmployeeDetailsClient() {
     }
   };
 
+  const fetchAvailableManagers = async (currentEmployeeId: string) => {
+    try {
+      const response = await fetch('/api/employees');
+      if (response.ok) {
+        const employees = await response.json();
+        // Filter for managers (role contains manager) and exclude current employee
+        const managers = employees.filter((emp: Employee) => 
+          emp._id !== currentEmployeeId && 
+          (emp.role.toLowerCase().includes('manager') || 
+           emp.role.toLowerCase().includes('mgr'))
+        );
+        setAvailableManagers(managers);
+      }
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+    }
+  };
+
+  const handleAssignManager = async () => {
+    try {
+      const response = await fetch(`/api/employees/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          managerId: selectedManagerId === 'none' || !selectedManagerId ? null : selectedManagerId,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Manager assigned successfully');
+        setManagerDialogOpen(false);
+        fetchEmployeeDetails(params.id as string);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to assign manager');
+      }
+    } catch (error) {
+      console.error('Error assigning manager:', error);
+      toast.error('Failed to assign manager');
+    }
+  };
+
+  const handleOpenManagerDialog = () => {
+    if (data?.employee) {
+      setSelectedManagerId(data.employee.managerId?._id || 'none');
+      fetchAvailableManagers(data.employee._id);
+      setManagerDialogOpen(true);
+    }
+  };
+
   const canViewHealthIndicators = session?.user.role === 'manager' || session?.user.role === 'hr' || session?.user.role === 'super_admin';
 
   if (loading) {
@@ -339,10 +391,6 @@ export default function EmployeeDetailsClient() {
         <div className="text-center">
           <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <p className="text-lg font-semibold">Employee not found</p>
-          <Button onClick={() => router.back()} className="mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </Button>
         </div>
       </div>
     );
@@ -354,15 +402,9 @@ export default function EmployeeDetailsClient() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{employee.name}</h1>
-            <p className="text-muted-foreground">{employee.employeeId}</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold">{employee.name}</h1>
+          <p className="text-muted-foreground">{employee.employeeId}</p>
         </div>
         <div className="flex gap-2">
           <Badge variant={employee.isActive ? 'default' : 'secondary'}>
@@ -649,7 +691,7 @@ export default function EmployeeDetailsClient() {
           </div>
 
           {/* Additional Onboarding Details */}
-          {onboarding && (
+          {onboarding ? (
             <>
               {/* Address Details */}
               {onboarding.addressDetails && (
@@ -984,6 +1026,14 @@ export default function EmployeeDetailsClient() {
                 </Card>
               )}
             </>
+          ) : (
+            <Card>
+              <CardContent className="py-6">
+                <p className="text-center text-muted-foreground">
+                  No onboarding details available for this employee.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* Section 8: Role-Based Action Panel */}
@@ -1037,6 +1087,10 @@ export default function EmployeeDetailsClient() {
                         <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Profile
+                        </Button>
+                        <Button variant="outline" onClick={handleOpenManagerDialog}>
+                          <Users className="h-4 w-4 mr-2" />
+                          Assign Manager
                         </Button>
                         <Button variant="outline" onClick={() => {
                           setAssignmentDialogOpen(true);
@@ -1598,6 +1652,54 @@ export default function EmployeeDetailsClient() {
             <Button onClick={handleSaveEdit}>
               <Save className="h-4 w-4 mr-2" />
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manager Assignment Dialog */}
+      <Dialog open={managerDialogOpen} onOpenChange={setManagerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Manager</DialogTitle>
+            <DialogDescription>
+              Select a manager for {employee.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Current Manager</Label>
+              <p className="text-sm text-muted-foreground">
+                {employee.managerId ? `${employee.managerId.name} (${employee.managerId.employeeId})` : 'No manager assigned'}
+              </p>
+            </div>
+            <div>
+              <Label>Select Manager</Label>
+              <Select
+                value={selectedManagerId}
+                onValueChange={setSelectedManagerId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Remove Manager)</SelectItem>
+                  {availableManagers.map((manager) => (
+                    <SelectItem key={manager._id} value={manager._id}>
+                      {manager.name} ({manager.employeeId}) - {manager.role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagerDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignManager}>
+              <Save className="h-4 w-4 mr-2" />
+              Assign Manager
             </Button>
           </DialogFooter>
         </DialogContent>
