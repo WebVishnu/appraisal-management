@@ -28,7 +28,6 @@ const ShiftSchema = new Schema<IShift>(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     shiftType: {
       type: String,

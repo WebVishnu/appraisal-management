@@ -20,6 +20,8 @@ import {
   Plane,
   ClipboardList,
   Briefcase,
+  DollarSign,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '@/types';
@@ -38,12 +40,14 @@ const navigation: Record<UserRole, NavItem[]> = {
   ],
   hr: [
     { name: 'Dashboard', href: '/dashboard/hr', icon: LayoutDashboard },
+    { name: 'Onboarding', href: '/dashboard/hr/onboarding', icon: UserPlus },
     { name: 'Employees', href: '/dashboard/hr/employees', icon: Users },
     { name: 'Appraisal Cycles', href: '/dashboard/hr/cycles', icon: Calendar },
     { name: 'Attendance', href: '/dashboard/hr/attendance', icon: Clock },
     { name: 'Shift & Roster', href: '/dashboard/hr/shifts', icon: Briefcase },
     { name: 'Leave Management', href: '/dashboard/hr/leave', icon: Plane },
     { name: 'Work Reports', href: '/dashboard/hr/work-reports', icon: ClipboardList },
+    { name: 'Payroll', href: '/dashboard/hr/payroll', icon: DollarSign },
     { name: 'Reports', href: '/dashboard/hr/reports', icon: BarChart3 },
   ],
   manager: [
@@ -62,6 +66,7 @@ const navigation: Record<UserRole, NavItem[]> = {
     { name: 'My Shifts', href: '/dashboard/employee/shifts', icon: Briefcase },
     { name: 'Leave', href: '/dashboard/employee/leave', icon: Plane },
     { name: 'Work Reports', href: '/dashboard/employee/work-reports', icon: ClipboardList },
+    { name: 'Payroll', href: '/dashboard/employee/payroll', icon: DollarSign },
     { name: 'My Appraisals', href: '/dashboard/employee/appraisals', icon: FileText },
     { name: 'Performance History', href: '/dashboard/employee/performance-history', icon: BarChart3 },
     { name: 'Goals', href: '/dashboard/employee/goals', icon: Target },

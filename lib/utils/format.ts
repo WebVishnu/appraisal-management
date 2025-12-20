@@ -40,3 +40,54 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
 
+/**
+ * Safely converts error objects to string messages for display
+ * Prevents React errors when trying to render error objects
+ */
+export function formatErrorMessage(error: any, defaultMessage: string = 'An error occurred'): string {
+  if (!error) return defaultMessage;
+  
+  // If it's already a string, return it
+  if (typeof error === 'string') return error;
+  
+  // If it's an array, format each item
+  if (Array.isArray(error)) {
+    return error
+      .map((e: any) => {
+        if (typeof e === 'string') return e;
+        if (e?.message) return e.message;
+        if (e?.path && e?.message) return `${e.path.join('.')}: ${e.message}`;
+        return JSON.stringify(e);
+      })
+      .join(', ');
+  }
+  
+  // If it's an object with an error property
+  if (error?.error) {
+    return formatErrorMessage(error.error, defaultMessage);
+  }
+  
+  // If it has a message property
+  if (error?.message) return error.message;
+  
+  // If it's a Zod error with issues
+  if (error?.issues && Array.isArray(error.issues)) {
+    return error.issues
+      .map((issue: any) => {
+        const path = issue.path?.join('.') || '';
+        return path ? `${path}: ${issue.message}` : issue.message;
+      })
+      .join(', ');
+  }
+  
+  // Last resort: try to stringify
+  try {
+    const str = JSON.stringify(error);
+    // If the stringified version is too long or not useful, return default
+    if (str.length > 200 || str === '{}') return defaultMessage;
+    return str;
+  } catch {
+    return defaultMessage;
+  }
+}
+

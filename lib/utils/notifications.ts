@@ -6,7 +6,7 @@ import User from '@/lib/models/User';
 
 export async function createNotification(
   userId: string,
-  type: 'cycle_started' | 'cycle_deadline' | 'review_pending' | 'review_submitted' | 'cycle_closed' | 'reminder',
+  type: 'cycle_started' | 'cycle_deadline' | 'review_pending' | 'review_submitted' | 'cycle_closed' | 'reminder' | 'onboarding_invited' | 'onboarding_pending' | 'onboarding_submitted' | 'onboarding_approved' | 'onboarding_rejected' | 'onboarding_changes_requested',
   title: string,
   message: string,
   link?: string,

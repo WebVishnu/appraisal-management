@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
-  type: 'cycle_started' | 'cycle_deadline' | 'review_pending' | 'review_submitted' | 'cycle_closed' | 'reminder';
+  type: 'cycle_started' | 'cycle_deadline' | 'review_pending' | 'review_submitted' | 'cycle_closed' | 'reminder' | 'onboarding_invited' | 'onboarding_pending' | 'onboarding_submitted' | 'onboarding_approved' | 'onboarding_rejected' | 'onboarding_changes_requested';
   title: string;
   message: string;
   link?: string;
@@ -22,7 +22,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['cycle_started', 'cycle_deadline', 'review_pending', 'review_submitted', 'cycle_closed', 'reminder'],
+      enum: ['cycle_started', 'cycle_deadline', 'review_pending', 'review_submitted', 'cycle_closed', 'reminder', 'onboarding_invited', 'onboarding_pending', 'onboarding_submitted', 'onboarding_approved', 'onboarding_rejected', 'onboarding_changes_requested'],
       required: true,
     },
     title: {
