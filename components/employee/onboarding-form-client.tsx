@@ -127,25 +127,63 @@ export default function OnboardingFormClient() {
     }
   }, [token]);
 
-  // Re-fetch when session changes
+  // Re-fetch when session changes and reset view states
   useEffect(() => {
-    if (session && token) {
+    if (token) {
+      // Reset view states when session changes
+      if (!session || !session.user) {
+        // User logged out - clear HR/Manager view
+        setIsHRView(false);
+        setIsManagerView(false);
+        setIsHREditMode(false);
+      }
       fetchOnboardingData();
     }
   }, [session]);
 
   const fetchOnboardingData = async () => {
+    if (!token) {
+      toast.error('Invalid onboarding link');
+      router.push('/login');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/onboarding/token/${token}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRequest(data.request);
-        setSubmission(data.submission);
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to load onboarding request' }));
         
-        // Check if HR or Manager is viewing
-        const isHR = session?.user?.role === 'hr' || session?.user?.role === 'super_admin';
-        const isManager = session?.user?.role === 'manager';
+        // Handle different error status codes
+        if (response.status === 403) {
+          toast.error(error.error || 'You do not have permission to access this onboarding request');
+          router.push('/login');
+          return;
+        } else if (response.status === 404) {
+          toast.error(error.error || 'Invalid onboarding link');
+          router.push('/login');
+          return;
+        } else if (response.status === 400) {
+          toast.error(error.error || 'Invalid onboarding request');
+          router.push('/login');
+          return;
+        } else {
+          toast.error(error.error || 'Failed to load onboarding request');
+          router.push('/login');
+          return;
+        }
+      }
+
+      const data = await response.json();
+      setRequest(data.request);
+      setSubmission(data.submission);
+      
+      // Check if HR or Manager is viewing - only if session exists and user is logged in
+      if (session?.user) {
+        const isHR = session.user.role === 'hr' || session.user.role === 'super_admin';
+        const isManager = session.user.role === 'manager';
         setIsHRView(isHR || isManager); // Both HR and managers can view
+        setIsManagerView(isManager);
         
         // HR can edit if status is 'submitted' and not 'changes_requested'
         // Managers can only view (read-only)
@@ -231,13 +269,14 @@ export default function OnboardingFormClient() {
           });
         }
       } else {
-        const error = await response.json();
-        toast.error(formatErrorMessage(error.error, 'Failed to load onboarding'));
-        router.push('/login');
+        // No session - employee completing their own onboarding
+        setIsHRView(false);
+        setIsManagerView(false);
+        setIsHREditMode(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching onboarding data:', error);
-      toast.error('Failed to load onboarding');
+      toast.error(error.message || 'Failed to load onboarding request. Please try again.');
       router.push('/login');
     } finally {
       setLoading(false);
