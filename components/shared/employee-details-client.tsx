@@ -743,23 +743,70 @@ export default function EmployeeDetailsClient() {
                   <CardHeader>
                     <CardTitle>Identity & KYC Documents</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {onboarding.identityKYC.aadhaarNumber && (
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {onboarding.identityKYC.aadhaarNumber && (
+                        <div>
+                          <Label className="text-muted-foreground">Aadhaar Number</Label>
+                          <p className="font-medium">{onboarding.identityKYC.aadhaarNumber}</p>
+                          {onboarding.identityKYC.aadhaarDocumentUrl && (
+                            <a
+                              href={onboarding.identityKYC.aadhaarDocumentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm flex items-center gap-1 mt-1"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Document
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {onboarding.identityKYC.panNumber && (
+                        <div>
+                          <Label className="text-muted-foreground">PAN Number</Label>
+                          <p className="font-medium">{onboarding.identityKYC.panNumber}</p>
+                          {onboarding.identityKYC.panDocumentUrl && (
+                            <a
+                              href={onboarding.identityKYC.panDocumentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm flex items-center gap-1 mt-1"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Document
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {onboarding.identityKYC.passportNumber && (
+                        <div>
+                          <Label className="text-muted-foreground">Passport Number</Label>
+                          <p className="font-medium">{onboarding.identityKYC.passportNumber}</p>
+                          {onboarding.identityKYC.passportDocumentUrl && (
+                            <a
+                              href={onboarding.identityKYC.passportDocumentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm flex items-center gap-1 mt-1"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Document
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {onboarding.personalDetails?.photographUrl && (
                       <div>
-                        <Label className="text-muted-foreground">Aadhaar Number</Label>
-                        <p className="font-medium">{onboarding.identityKYC.aadhaarNumber}</p>
-                      </div>
-                    )}
-                    {onboarding.identityKYC.panNumber && (
-                      <div>
-                        <Label className="text-muted-foreground">PAN Number</Label>
-                        <p className="font-medium">{onboarding.identityKYC.panNumber}</p>
-                      </div>
-                    )}
-                    {onboarding.identityKYC.passportNumber && (
-                      <div>
-                        <Label className="text-muted-foreground">Passport Number</Label>
-                        <p className="font-medium">{onboarding.identityKYC.passportNumber}</p>
+                        <Label className="text-muted-foreground font-semibold">Photograph</Label>
+                        <div className="mt-2">
+                          <img
+                            src={onboarding.personalDetails.photographUrl}
+                            alt="Employee Photograph"
+                            className="max-w-xs h-auto rounded-lg border"
+                          />
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -825,6 +872,19 @@ export default function EmployeeDetailsClient() {
                           <p className="font-medium">{onboarding.compensationPayroll.ifscCode}</p>
                         </div>
                       </div>
+                      {onboarding.compensationPayroll.bankProofUrl && (
+                        <div className="mt-3">
+                          <a
+                            href={onboarding.compensationPayroll.bankProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm flex items-center gap-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                            View Bank Proof
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -890,6 +950,19 @@ export default function EmployeeDetailsClient() {
                             <p className="font-medium">{edu.yearOfPassing}</p>
                           </div>
                         </div>
+                        {edu.degreeCertificateUrl && (
+                          <div className="mt-3">
+                            <a
+                              href={edu.degreeCertificateUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline text-sm flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Degree Certificate
+                            </a>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </CardContent>
@@ -925,6 +998,32 @@ export default function EmployeeDetailsClient() {
                             <p className="font-medium">{prev.reasonForLeaving}</p>
                           </div>
                         </div>
+                        {(prev.experienceLetterUrl || prev.relievingLetterUrl) && (
+                          <div className="mt-3 flex gap-4">
+                            {prev.experienceLetterUrl && (
+                              <a
+                                href={prev.experienceLetterUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline text-sm flex items-center gap-2"
+                              >
+                                <FileText className="h-4 w-4" />
+                                View Experience Letter
+                              </a>
+                            )}
+                            {prev.relievingLetterUrl && (
+                              <a
+                                href={prev.relievingLetterUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline text-sm flex items-center gap-2"
+                              >
+                                <FileText className="h-4 w-4" />
+                                View Relieving Letter
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </CardContent>
@@ -966,62 +1065,77 @@ export default function EmployeeDetailsClient() {
                   <CardHeader>
                     <CardTitle>Policies & Declarations</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground">Offer Letter</Label>
-                      <Badge variant={onboarding.policiesDeclarations.offerLetterAccepted ? 'default' : 'secondary'}>
-                        {onboarding.policiesDeclarations.offerLetterAccepted ? 'Accepted' : 'Pending'}
-                      </Badge>
-                      {onboarding.policiesDeclarations.offerLetterAcceptedAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(onboarding.policiesDeclarations.offerLetterAcceptedAt)}
-                        </p>
-                      )}
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">Offer Letter</Label>
+                        <Badge variant={onboarding.policiesDeclarations.offerLetterAccepted ? 'default' : 'secondary'}>
+                          {onboarding.policiesDeclarations.offerLetterAccepted ? 'Accepted' : 'Pending'}
+                        </Badge>
+                        {onboarding.policiesDeclarations.offerLetterAcceptedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(onboarding.policiesDeclarations.offerLetterAcceptedAt)}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">NDA</Label>
+                        <Badge variant={onboarding.policiesDeclarations.ndaSigned ? 'default' : 'secondary'}>
+                          {onboarding.policiesDeclarations.ndaSigned ? 'Signed' : 'Pending'}
+                        </Badge>
+                        {onboarding.policiesDeclarations.ndaSignedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(onboarding.policiesDeclarations.ndaSignedAt)}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Code of Conduct</Label>
+                        <Badge variant={onboarding.policiesDeclarations.codeOfConductAccepted ? 'default' : 'secondary'}>
+                          {onboarding.policiesDeclarations.codeOfConductAccepted ? 'Accepted' : 'Pending'}
+                        </Badge>
+                        {onboarding.policiesDeclarations.codeOfConductAcceptedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(onboarding.policiesDeclarations.codeOfConductAcceptedAt)}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">POSH Policy</Label>
+                        <Badge variant={onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'default' : 'secondary'}>
+                          {onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'Acknowledged' : 'Pending'}
+                        </Badge>
+                        {onboarding.policiesDeclarations.poshPolicyAcknowledgedAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(onboarding.policiesDeclarations.poshPolicyAcknowledgedAt)}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Data Privacy</Label>
+                        <Badge variant={onboarding.policiesDeclarations.dataPrivacyConsent ? 'default' : 'secondary'}>
+                          {onboarding.policiesDeclarations.dataPrivacyConsent ? 'Consented' : 'Pending'}
+                        </Badge>
+                        {onboarding.policiesDeclarations.dataPrivacyConsentAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(onboarding.policiesDeclarations.dataPrivacyConsentAt)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-muted-foreground">NDA</Label>
-                      <Badge variant={onboarding.policiesDeclarations.ndaSigned ? 'default' : 'secondary'}>
-                        {onboarding.policiesDeclarations.ndaSigned ? 'Signed' : 'Pending'}
-                      </Badge>
-                      {onboarding.policiesDeclarations.ndaSignedAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(onboarding.policiesDeclarations.ndaSignedAt)}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Code of Conduct</Label>
-                      <Badge variant={onboarding.policiesDeclarations.codeOfConductAccepted ? 'default' : 'secondary'}>
-                        {onboarding.policiesDeclarations.codeOfConductAccepted ? 'Accepted' : 'Pending'}
-                      </Badge>
-                      {onboarding.policiesDeclarations.codeOfConductAcceptedAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(onboarding.policiesDeclarations.codeOfConductAcceptedAt)}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">POSH Policy</Label>
-                      <Badge variant={onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'default' : 'secondary'}>
-                        {onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'Acknowledged' : 'Pending'}
-                      </Badge>
-                      {onboarding.policiesDeclarations.poshPolicyAcknowledgedAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(onboarding.policiesDeclarations.poshPolicyAcknowledgedAt)}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Data Privacy</Label>
-                      <Badge variant={onboarding.policiesDeclarations.dataPrivacyConsent ? 'default' : 'secondary'}>
-                        {onboarding.policiesDeclarations.dataPrivacyConsent ? 'Consented' : 'Pending'}
-                      </Badge>
-                      {onboarding.policiesDeclarations.dataPrivacyConsentAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(onboarding.policiesDeclarations.dataPrivacyConsentAt)}
-                        </p>
-                      )}
-                    </div>
+                    {onboarding.policiesDeclarations.signedDocumentsUrl && (
+                      <div>
+                        <a
+                          href={onboarding.policiesDeclarations.signedDocumentsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm flex items-center gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          View Signed Documents
+                        </a>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

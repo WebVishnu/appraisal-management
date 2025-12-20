@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { formatErrorMessage, formatDate } from '@/lib/utils/format';
 import { validatePAN, validateAadhaar, validateIFSC, formatPAN, formatAadhaar, formatIFSC } from '@/lib/utils/onboarding';
+import { uploadFileToCloudinary } from '@/lib/utils/upload';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
 
 interface OnboardingRequest {
@@ -47,6 +48,8 @@ interface OnboardingRequest {
   email: string;
   firstName: string;
   lastName: string;
+  personalEmail?: string;
+  mobileNumber?: string;
   dateOfJoining: string;
   department?: string;
   designation?: string;
@@ -55,7 +58,7 @@ interface OnboardingRequest {
     _id: string;
     name: string;
     employeeId: string;
-  };
+  } | string;
   status: string;
   progressPercentage: number;
   tokenExpiry: string;
@@ -120,6 +123,7 @@ export default function OnboardingFormClient() {
   const [isHRView, setIsHRView] = useState(false);
   const [isManagerView, setIsManagerView] = useState(false);
   const [isHREditMode, setIsHREditMode] = useState(false);
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (token) {
@@ -201,78 +205,90 @@ export default function OnboardingFormClient() {
           // Managers can only view, never edit
           setIsHREditMode(false);
         }
-        
-        // Initialize form data from submission and merge with request data
-        if (data.submission) {
-          // Merge employment details with request data (for pre-filled values)
-          const employmentDetails = data.submission.employmentDetails || {};
-          const mergedEmploymentDetails = {
-            ...employmentDetails,
-            // Include request data if not already in submission
-            dateOfJoining: employmentDetails.dateOfJoining || data.request.dateOfJoining,
-            department: employmentDetails.department || data.request.department || '',
-            designation: employmentDetails.designation || data.request.designation || '',
-            workLocation: employmentDetails.workLocation || data.request.workLocation || '',
-            reportingManagerId: employmentDetails.reportingManagerId || data.request.reportingManagerId?._id || data.request.reportingManagerId || null,
-          };
-
-          // Merge personal details with request data (auto-fill if not already filled)
-          const personalDetails = data.submission.personalDetails || {};
-          const mergedPersonalDetails = {
-            ...personalDetails,
-            // Auto-fill from request if not already in submission
-            fullName: personalDetails.fullName || (data.request.firstName && data.request.lastName 
-              ? `${data.request.firstName} ${data.request.lastName}`.trim()
-              : ''),
-            mobileNumber: personalDetails.mobileNumber || data.request.mobileNumber || '',
-            personalEmail: personalDetails.personalEmail || data.request.personalEmail || data.request.email || '',
-          };
-
-          setFormData({
-            personalDetails: mergedPersonalDetails,
-            addressDetails: data.submission.addressDetails || {},
-            identityKYC: data.submission.identityKYC || {},
-            employmentDetails: mergedEmploymentDetails,
-            compensationPayroll: data.submission.compensationPayroll || {},
-            statutoryTax: data.submission.statutoryTax || {},
-            educationDetails: Array.isArray(data.submission.educationDetails) ? data.submission.educationDetails : [],
-            previousEmployment: Array.isArray(data.submission.previousEmployment) ? data.submission.previousEmployment : [],
-            emergencyContact: data.submission.emergencyContact || {},
-            policiesDeclarations: data.submission.policiesDeclarations || {},
-          });
-        } else if (data.request) {
-          // If no submission exists yet, initialize with request data and auto-fill available fields
-          setFormData({
-            personalDetails: {
-              // Auto-fill from request if available
-              fullName: data.request.firstName && data.request.lastName 
-                ? `${data.request.firstName} ${data.request.lastName}`.trim()
-                : '',
-              mobileNumber: data.request.mobileNumber || '',
-              personalEmail: data.request.personalEmail || data.request.email || '',
-            },
-            addressDetails: {},
-            identityKYC: {},
-            employmentDetails: {
-              dateOfJoining: data.request.dateOfJoining,
-              department: data.request.department || '',
-              designation: data.request.designation || '',
-              workLocation: data.request.workLocation || '',
-              reportingManagerId: data.request.reportingManagerId?._id || data.request.reportingManagerId || null,
-            },
-            compensationPayroll: {},
-            statutoryTax: {},
-            educationDetails: [{ qualification: '', degree: '', institution: '', yearOfPassing: new Date().getFullYear() }],
-            previousEmployment: [],
-            emergencyContact: {},
-            policiesDeclarations: {},
-          });
-        }
       } else {
         // No session - employee completing their own onboarding
         setIsHRView(false);
         setIsManagerView(false);
         setIsHREditMode(false);
+      }
+
+      // Initialize form data from submission and merge with request data
+      // This should happen regardless of session to auto-fill HR-provided data
+      if (data.submission) {
+        // Merge employment details with request data (for pre-filled values)
+        const employmentDetails = data.submission.employmentDetails || {};
+        const mergedEmploymentDetails = {
+          ...employmentDetails,
+          // Auto-fill from request if submission field is empty or missing
+          dateOfJoining: employmentDetails.dateOfJoining || data.request.dateOfJoining,
+          department: employmentDetails.department || data.request.department || '',
+          designation: employmentDetails.designation || data.request.designation || '',
+          workLocation: employmentDetails.workLocation || data.request.workLocation || '',
+          reportingManagerId: employmentDetails.reportingManagerId || (typeof data.request.reportingManagerId === 'object' && data.request.reportingManagerId?._id) || (typeof data.request.reportingManagerId === 'string' ? data.request.reportingManagerId : null),
+        };
+
+        // Merge personal details with request data (auto-fill if not already filled)
+        const personalDetails = data.submission.personalDetails || {};
+        const mergedPersonalDetails = {
+          ...personalDetails,
+          // Auto-fill from request if submission field is empty or missing
+          fullName: personalDetails.fullName || (data.request.firstName && data.request.lastName 
+            ? `${data.request.firstName} ${data.request.lastName}`.trim()
+            : ''),
+          mobileNumber: personalDetails.mobileNumber || data.request.mobileNumber || '',
+          personalEmail: personalDetails.personalEmail || data.request.personalEmail || data.request.email || '',
+        };
+
+        setFormData({
+          personalDetails: mergedPersonalDetails,
+          addressDetails: data.submission.addressDetails || {},
+          identityKYC: data.submission.identityKYC || {},
+          employmentDetails: mergedEmploymentDetails,
+          compensationPayroll: data.submission.compensationPayroll || {},
+          statutoryTax: data.submission.statutoryTax || {},
+          educationDetails: Array.isArray(data.submission.educationDetails) ? data.submission.educationDetails : [],
+          previousEmployment: Array.isArray(data.submission.previousEmployment) ? data.submission.previousEmployment : [],
+          emergencyContact: data.submission.emergencyContact || {},
+          policiesDeclarations: data.submission.policiesDeclarations || {},
+        });
+      } else if (data.request) {
+        // If no submission exists yet, initialize with request data and auto-fill all available fields
+        setFormData({
+          personalDetails: {
+            // Auto-fill from request - these are HR-provided defaults
+            fullName: data.request.firstName && data.request.lastName 
+              ? `${data.request.firstName} ${data.request.lastName}`.trim()
+              : '',
+            mobileNumber: data.request.mobileNumber || '',
+            personalEmail: data.request.personalEmail || data.request.email || '',
+            // Other personal details fields will be empty
+            dateOfBirth: '',
+            gender: '',
+            maritalStatus: '',
+            nationality: '',
+            photographUrl: '',
+          },
+          addressDetails: {},
+          identityKYC: {},
+          employmentDetails: {
+            // Auto-fill from request - these are HR-provided defaults
+            dateOfJoining: data.request.dateOfJoining,
+            department: data.request.department || '',
+            designation: data.request.designation || '',
+            workLocation: data.request.workLocation || '',
+            reportingManagerId: (typeof data.request.reportingManagerId === 'object' && data.request.reportingManagerId?._id) || (typeof data.request.reportingManagerId === 'string' ? data.request.reportingManagerId : null),
+            // Other employment details fields will be empty
+            employmentType: '',
+            probationStatus: false,
+            probationPeriodMonths: undefined,
+          },
+          compensationPayroll: {},
+          statutoryTax: {},
+          educationDetails: [{ qualification: '', degree: '', institution: '', yearOfPassing: new Date().getFullYear() }],
+          previousEmployment: [],
+          emergencyContact: {},
+          policiesDeclarations: {},
+        });
       }
     } catch (error: any) {
       console.error('Error fetching onboarding data:', error);
@@ -299,7 +315,7 @@ export default function OnboardingFormClient() {
           department: stepData.department || request?.department || '',
           designation: stepData.designation || request?.designation || '',
           workLocation: stepData.workLocation || request?.workLocation || '',
-          reportingManagerId: stepData.reportingManagerId || request?.reportingManagerId?._id || request?.reportingManagerId || null,
+          reportingManagerId: stepData.reportingManagerId || (typeof request?.reportingManagerId === 'object' && request.reportingManagerId?._id) || (typeof request?.reportingManagerId === 'string' ? request.reportingManagerId : null),
           // Preserve other fields
           employmentType: stepData.employmentType || '',
           probationStatus: stepData.probationStatus || false,
@@ -477,6 +493,48 @@ export default function OnboardingFormClient() {
           [fieldOrData]: value,
         },
       });
+    }
+  };
+
+  const handleFileUpload = async (
+    file: File,
+    fieldPath: string,
+    folder: string = 'onboarding-documents'
+  ) => {
+    const uploadKey = fieldPath;
+    setUploading((prev) => ({ ...prev, [uploadKey]: true }));
+
+    try {
+      const result = await uploadFileToCloudinary(file, folder);
+      
+      // Parse field path (e.g., "personalDetails.photographUrl" or "identityKYC.aadhaarDocumentUrl" or "educationDetails.0.degreeCertificateUrl")
+      const pathParts = fieldPath.split('.');
+      
+      if (pathParts.length === 2) {
+        // Simple field update: stepId.field
+        const [stepId, field] = pathParts;
+        updateFormData(stepId, field, result.url);
+      } else if (pathParts.length === 3) {
+        // Array field update: stepId.index.field
+        const [stepId, indexStr, field] = pathParts;
+        const index = parseInt(indexStr);
+        const stepData = formData[stepId] || [];
+        if (Array.isArray(stepData)) {
+          const newData = [...stepData];
+          if (newData[index]) {
+            newData[index] = { ...newData[index], [field]: result.url };
+            updateFormData(stepId, newData);
+          }
+        }
+      }
+      
+      toast.success('File uploaded successfully');
+      return result.url;
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload file');
+      throw error;
+    } finally {
+      setUploading((prev) => ({ ...prev, [uploadKey]: false }));
     }
   };
 
@@ -857,12 +915,24 @@ export default function OnboardingFormClient() {
                   // For employmentDetails, merge with request data to show pre-filled values
                   if (currentStepData.id === 'employmentDetails' && request) {
                     stepData = {
-                      ...stepData,
+                      ...(stepData || {}),
                       dateOfJoining: stepData?.dateOfJoining || request.dateOfJoining,
                       department: stepData?.department || request.department || '',
                       designation: stepData?.designation || request.designation || '',
                       workLocation: stepData?.workLocation || request.workLocation || '',
-                      reportingManagerId: stepData?.reportingManagerId || request.reportingManagerId?._id || request.reportingManagerId || null,
+                      reportingManagerId: stepData?.reportingManagerId || (typeof request.reportingManagerId === 'object' && request.reportingManagerId?._id) || (typeof request.reportingManagerId === 'string' ? request.reportingManagerId : null),
+                    };
+                  }
+                  
+                  // For personalDetails, merge with request data to show pre-filled values
+                  if (currentStepData.id === 'personalDetails' && request) {
+                    stepData = {
+                      ...(stepData || {}),
+                      fullName: stepData?.fullName || (request.firstName && request.lastName 
+                        ? `${request.firstName} ${request.lastName}`.trim()
+                        : ''),
+                      mobileNumber: stepData?.mobileNumber || request.mobileNumber || '',
+                      personalEmail: stepData?.personalEmail || request.personalEmail || request.email || '',
                     };
                   }
                   
@@ -1092,9 +1162,44 @@ export default function OnboardingFormClient() {
             <div>
               <Label>Photograph</Label>
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload your photograph (JPG/PNG, max 5MB)</p>
-                <Input type="file" disabled={isReadOnly} accept="image/jpeg,image/png" className="mt-2" />
+                {stepData.photographUrl ? (
+                  <div className="space-y-2">
+                    <img
+                      src={stepData.photographUrl}
+                      alt="Photograph"
+                      className="max-w-full h-auto max-h-48 mx-auto rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateFormData('personalDetails', 'photographUrl', '')}
+                      disabled={isReadOnly || uploading['personalDetails.photographUrl']}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Upload your photograph (JPG/PNG, max 5MB)</p>
+                    <Input
+                      type="file"
+                      disabled={isReadOnly || uploading['personalDetails.photographUrl']}
+                      accept="image/jpeg,image/png,image/jpg"
+                      className="mt-2"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(file, 'personalDetails.photographUrl', 'onboarding-documents/photographs');
+                        }
+                      }}
+                    />
+                    {uploading['personalDetails.photographUrl'] && (
+                      <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1379,9 +1484,48 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>Aadhaar Document</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Upload Aadhaar (PDF/JPG, max 5MB)</p>
-                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-2" disabled={isReadOnly} />
+                  {stepData.aadhaarDocumentUrl ? (
+                    <div className="space-y-2">
+                      <a
+                        href={stepData.aadhaarDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center justify-center gap-2"
+                      >
+                        <FileText className="h-5 w-5" />
+                        View Aadhaar Document
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateFormData('identityKYC', 'aadhaarDocumentUrl', '')}
+                        disabled={isReadOnly || uploading['identityKYC.aadhaarDocumentUrl']}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Upload Aadhaar (PDF/JPG, max 5MB)</p>
+                      <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="mt-2"
+                        disabled={isReadOnly || uploading['identityKYC.aadhaarDocumentUrl']}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, 'identityKYC.aadhaarDocumentUrl', 'onboarding-documents/aadhaar');
+                          }
+                        }}
+                      />
+                      {uploading['identityKYC.aadhaarDocumentUrl'] && (
+                        <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               <div>
@@ -1403,9 +1547,48 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>PAN Document</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Upload PAN (PDF/JPG, max 5MB)</p>
-                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-2" disabled={isReadOnly} />
+                  {stepData.panDocumentUrl ? (
+                    <div className="space-y-2">
+                      <a
+                        href={stepData.panDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center justify-center gap-2"
+                      >
+                        <FileText className="h-5 w-5" />
+                        View PAN Document
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateFormData('identityKYC', 'panDocumentUrl', '')}
+                        disabled={isReadOnly || uploading['identityKYC.panDocumentUrl']}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Upload PAN (PDF/JPG, max 5MB)</p>
+                      <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="mt-2"
+                        disabled={isReadOnly || uploading['identityKYC.panDocumentUrl']}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, 'identityKYC.panDocumentUrl', 'onboarding-documents/pan');
+                          }
+                        }}
+                      />
+                      {uploading['identityKYC.panDocumentUrl'] && (
+                        <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               <div>
@@ -1420,9 +1603,48 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>Passport Document (Optional)</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Upload Passport (PDF/JPG, max 5MB)</p>
-                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-2" disabled={isReadOnly} />
+                  {stepData.passportDocumentUrl ? (
+                    <div className="space-y-2">
+                      <a
+                        href={stepData.passportDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center justify-center gap-2"
+                      >
+                        <FileText className="h-5 w-5" />
+                        View Passport Document
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateFormData('identityKYC', 'passportDocumentUrl', '')}
+                        disabled={isReadOnly || uploading['identityKYC.passportDocumentUrl']}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Upload Passport (PDF/JPG, max 5MB)</p>
+                      <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="mt-2"
+                        disabled={isReadOnly || uploading['identityKYC.passportDocumentUrl']}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, 'identityKYC.passportDocumentUrl', 'onboarding-documents/passport');
+                          }
+                        }}
+                      />
+                      {uploading['identityKYC.passportDocumentUrl'] && (
+                        <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1530,9 +1752,9 @@ export default function OnboardingFormClient() {
               <Label>Reporting Manager</Label>
               <Input
                 value={
-                  stepData.reportingManagerId
-                    ? request?.reportingManagerId?.name || ''
-                    : request?.reportingManagerId?.name || ''
+                  typeof request?.reportingManagerId === 'object' && request.reportingManagerId?.name
+                    ? request.reportingManagerId.name
+                    : ''
                 }
                 disabled
                 placeholder="Pre-filled from HR"
@@ -1760,9 +1982,48 @@ export default function OnboardingFormClient() {
             <div>
               <Label>Bank Proof (Cancelled Cheque / Bank Statement)</Label>
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Upload Bank Proof (PDF/JPG, max 5MB)</p>
-                <Input type="file" disabled={isReadOnly} accept=".pdf,.jpg,.jpeg,.png" className="mt-2" />
+                {stepData.bankProofUrl ? (
+                  <div className="space-y-2">
+                    <a
+                      href={stepData.bankProofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center justify-center gap-2"
+                    >
+                      <FileText className="h-5 w-5" />
+                      View Bank Proof
+                    </a>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateFormData('compensationPayroll', 'bankProofUrl', '')}
+                      disabled={isReadOnly || uploading['compensationPayroll.bankProofUrl']}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Upload Bank Proof (PDF/JPG, max 5MB)</p>
+                    <Input
+                      type="file"
+                      disabled={isReadOnly || uploading['compensationPayroll.bankProofUrl']}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="mt-2"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(file, 'compensationPayroll.bankProofUrl', 'onboarding-documents/bank-proof');
+                        }
+                      }}
+                    />
+                    {uploading['compensationPayroll.bankProofUrl'] && (
+                      <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1917,9 +2178,56 @@ export default function OnboardingFormClient() {
                   <div>
                     <Label>Degree Certificate (Optional)</Label>
                     <div className="border-2 border-dashed rounded-lg p-3 text-center">
-                      <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Upload Certificate (PDF/JPG, max 5MB)</p>
-                      <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-1 text-xs" disabled={isReadOnly} />
+                      {edu.degreeCertificateUrl ? (
+                        <div className="space-y-2">
+                          <a
+                            href={edu.degreeCertificateUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center justify-center gap-2 text-xs"
+                          >
+                            <FileText className="h-4 w-4" />
+                            View Certificate
+                          </a>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newList = [...educationList];
+                              newList[index] = { ...newList[index], degreeCertificateUrl: '' };
+                              updateFormData('educationDetails', newList);
+                            }}
+                            disabled={isReadOnly || uploading[`educationDetails.${index}.degreeCertificateUrl`]}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Upload Certificate (PDF/JPG, max 5MB)</p>
+                          <Input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="mt-1 text-xs"
+                            disabled={isReadOnly || uploading[`educationDetails.${index}.degreeCertificateUrl`]}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleFileUpload(
+                                  file,
+                                  `educationDetails.${index}.degreeCertificateUrl`,
+                                  'onboarding-documents/education'
+                                );
+                              }
+                            }}
+                          />
+                          {uploading[`educationDetails.${index}.degreeCertificateUrl`] && (
+                            <p className="text-xs text-blue-600 mt-1">Uploading...</p>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2023,17 +2331,111 @@ export default function OnboardingFormClient() {
                     <div>
                       <Label>Experience Letter</Label>
                       <div className="border-2 border-dashed rounded-lg p-3 text-center">
-                        <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Upload (PDF/JPG, max 5MB)</p>
-                        <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-1 text-xs" disabled={isReadOnly} />
+                        {emp.experienceLetterUrl ? (
+                          <div className="space-y-2">
+                            <a
+                              href={emp.experienceLetterUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline flex items-center justify-center gap-2 text-xs"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Letter
+                            </a>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newList = [...employmentList];
+                                newList[index] = { ...newList[index], experienceLetterUrl: '' };
+                                updateFormData('previousEmployment', newList);
+                              }}
+                              disabled={isReadOnly || uploading[`previousEmployment.${index}.experienceLetterUrl`]}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Upload (PDF/JPG, max 5MB)</p>
+                            <Input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="mt-1 text-xs"
+                              disabled={isReadOnly || uploading[`previousEmployment.${index}.experienceLetterUrl`]}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleFileUpload(
+                                    file,
+                                    `previousEmployment.${index}.experienceLetterUrl`,
+                                    'onboarding-documents/employment'
+                                  );
+                                }
+                              }}
+                            />
+                            {uploading[`previousEmployment.${index}.experienceLetterUrl`] && (
+                              <p className="text-xs text-blue-600 mt-1">Uploading...</p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                     <div>
                       <Label>Relieving Letter</Label>
                       <div className="border-2 border-dashed rounded-lg p-3 text-center">
-                        <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Upload (PDF/JPG, max 5MB)</p>
-                        <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="mt-1 text-xs" disabled={isReadOnly} />
+                        {emp.relievingLetterUrl ? (
+                          <div className="space-y-2">
+                            <a
+                              href={emp.relievingLetterUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline flex items-center justify-center gap-2 text-xs"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Letter
+                            </a>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newList = [...employmentList];
+                                newList[index] = { ...newList[index], relievingLetterUrl: '' };
+                                updateFormData('previousEmployment', newList);
+                              }}
+                              disabled={isReadOnly || uploading[`previousEmployment.${index}.relievingLetterUrl`]}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">Upload (PDF/JPG, max 5MB)</p>
+                            <Input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="mt-1 text-xs"
+                              disabled={isReadOnly || uploading[`previousEmployment.${index}.relievingLetterUrl`]}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleFileUpload(
+                                    file,
+                                    `previousEmployment.${index}.relievingLetterUrl`,
+                                    'onboarding-documents/employment'
+                                  );
+                                }
+                              }}
+                            />
+                            {uploading[`previousEmployment.${index}.relievingLetterUrl`] && (
+                              <p className="text-xs text-blue-600 mt-1">Uploading...</p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2203,9 +2605,48 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>Signed Documents</Label>
                 <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Upload signed documents (PDF, max 5MB)</p>
-                  <Input type="file" accept=".pdf" className="mt-2" disabled={isReadOnly} />
+                  {stepData.signedDocumentsUrl ? (
+                    <div className="space-y-2">
+                      <a
+                        href={stepData.signedDocumentsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center justify-center gap-2"
+                      >
+                        <FileText className="h-5 w-5" />
+                        View Signed Documents
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateFormData('policiesDeclarations', 'signedDocumentsUrl', '')}
+                        disabled={isReadOnly || uploading['policiesDeclarations.signedDocumentsUrl']}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Upload signed documents (PDF, max 5MB)</p>
+                      <Input
+                        type="file"
+                        accept=".pdf"
+                        className="mt-2"
+                        disabled={isReadOnly || uploading['policiesDeclarations.signedDocumentsUrl']}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, 'policiesDeclarations.signedDocumentsUrl', 'onboarding-documents/signed');
+                          }
+                        }}
+                      />
+                      {uploading['policiesDeclarations.signedDocumentsUrl'] && (
+                        <p className="text-xs text-blue-600 mt-2">Uploading...</p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

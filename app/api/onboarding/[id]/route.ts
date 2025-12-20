@@ -158,81 +158,142 @@ export async function PUT(
         );
       }
 
-      // Create Employee record
-      const employeeId = await generateEmployeeId();
-      const employee = await Employee.create({
-        employeeId,
-        name: `${submission.personalDetails?.fullName || request.firstName} ${request.lastName}`,
-        email: request.email,
-        role: submission.employmentDetails?.designation || request.designation || 'Employee',
-        managerId: submission.employmentDetails?.reportingManagerId || request.reportingManagerId || null,
-        isActive: true,
-      });
+      // Check if employee already exists
+      let employee = await Employee.findOne({ email: request.email.toLowerCase() });
+      let employeeId: string;
+      let isNewEmployee = false;
 
-      // Create User account with random 7-digit password
-      const defaultPassword = Math.floor(1000000 + Math.random() * 9000000).toString(); // Random 7-digit number
-      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-
-      // Determine user role
-      let userRole: 'employee' | 'manager' | 'hr' | 'super_admin' = 'employee';
-      const roleLower = (submission.employmentDetails?.designation || '').toLowerCase();
-      if (roleLower.includes('admin') || roleLower.includes('super')) {
-        userRole = 'super_admin';
-      } else if (roleLower.includes('hr') || roleLower.includes('human resource')) {
-        userRole = 'hr';
-      } else if (roleLower.includes('manager') || roleLower.includes('mgr')) {
-        userRole = 'manager';
-      }
-
-      const user = await User.create({
-        email: request.email,
-        password: hashedPassword,
-        role: userRole,
-        employeeId: employee._id,
-        isActive: true,
-      });
-
-      // Create Salary Structure if compensation data exists
-      if (submission.compensationPayroll) {
-        const comp = submission.compensationPayroll;
-        const monthlySalary = comp.annualCTC / 12;
-
-        await SalaryStructure.create({
-          employeeId: employee._id,
-          grossMonthlySalary: monthlySalary,
-          workingDaysRule: 'shift_based', // Default, can be updated later
-          paidLeaveTypes: ['paid', 'sick', 'casual', 'annual'],
-          unpaidLeaveTypes: ['unpaid'],
-          halfDayDeductionRule: 'half_day',
-          effectiveFrom: new Date(request.dateOfJoining),
-          version: 1,
+      if (employee) {
+        // Employee already exists - update it
+        employeeId = employee.employeeId;
+        employee.name = `${submission.personalDetails?.fullName || request.firstName} ${request.lastName}`;
+        employee.role = submission.employmentDetails?.designation || request.designation || employee.role;
+        employee.managerId = submission.employmentDetails?.reportingManagerId || request.reportingManagerId || employee.managerId;
+        employee.isActive = true;
+        await employee.save();
+      } else {
+        // Create new Employee record
+        employeeId = await generateEmployeeId();
+        employee = await Employee.create({
+          employeeId,
+          name: `${submission.personalDetails?.fullName || request.firstName} ${request.lastName}`,
+          email: request.email.toLowerCase(),
+          role: submission.employmentDetails?.designation || request.designation || 'Employee',
+          managerId: submission.employmentDetails?.reportingManagerId || request.reportingManagerId || null,
           isActive: true,
-          createdBy: createdByUserId,
+        });
+        isNewEmployee = true;
+      }
+
+      // Check if user already exists
+      let user = await User.findOne({ email: request.email.toLowerCase() });
+      let defaultPassword: string;
+
+      if (user) {
+        // User already exists - update it to link to employee
+        user.employeeId = employee._id;
+        user.isActive = true;
+        
+        // Update role if needed
+        let userRole: 'employee' | 'manager' | 'hr' | 'super_admin' = user.role;
+        const roleLower = (submission.employmentDetails?.designation || '').toLowerCase();
+        if (roleLower.includes('admin') || roleLower.includes('super')) {
+          userRole = 'super_admin';
+        } else if (roleLower.includes('hr') || roleLower.includes('human resource')) {
+          userRole = 'hr';
+        } else if (roleLower.includes('manager') || roleLower.includes('mgr')) {
+          userRole = 'manager';
+        }
+        user.role = userRole;
+        await user.save();
+        
+        // Don't generate new password if user already exists
+        defaultPassword = 'Already set';
+      } else {
+        // Create User account with random 7-digit password
+        defaultPassword = Math.floor(1000000 + Math.random() * 9000000).toString(); // Random 7-digit number
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+        // Determine user role
+        let userRole: 'employee' | 'manager' | 'hr' | 'super_admin' = 'employee';
+        const roleLower = (submission.employmentDetails?.designation || '').toLowerCase();
+        if (roleLower.includes('admin') || roleLower.includes('super')) {
+          userRole = 'super_admin';
+        } else if (roleLower.includes('hr') || roleLower.includes('human resource')) {
+          userRole = 'hr';
+        } else if (roleLower.includes('manager') || roleLower.includes('mgr')) {
+          userRole = 'manager';
+        }
+
+        user = await User.create({
+          email: request.email.toLowerCase(),
+          password: hashedPassword,
+          role: userRole,
+          employeeId: employee._id,
+          isActive: true,
         });
       }
 
-      // Create Leave Balances for current year
-      const currentYear = new Date().getFullYear();
-      const leaveTypes = ['paid', 'unpaid', 'sick', 'casual', 'annual'];
-      const leaveBalances = {
-        paid: 12,
-        unpaid: 0,
-        sick: 10,
-        casual: 8,
-        annual: 20,
-      };
-
-      for (const leaveType of leaveTypes) {
-        await LeaveBalance.create({
+      // Create Salary Structure if compensation data exists and employee is new
+      // (Don't overwrite existing salary structure)
+      if (submission.compensationPayroll && isNewEmployee) {
+        // Check if salary structure already exists
+        const existingSalaryStructure = await SalaryStructure.findOne({
           employeeId: employee._id,
-          leaveType: leaveType as any,
-          totalDays: leaveBalances[leaveType as keyof typeof leaveBalances],
-          usedDays: 0,
-          availableDays: leaveBalances[leaveType as keyof typeof leaveBalances],
-          year: currentYear,
-          lastUpdatedBy: createdByUserId,
-          lastUpdatedAt: new Date(),
+          isActive: true,
         });
+
+        if (!existingSalaryStructure) {
+          const comp = submission.compensationPayroll;
+          const monthlySalary = comp.annualCTC / 12;
+
+          await SalaryStructure.create({
+            employeeId: employee._id,
+            grossMonthlySalary: monthlySalary,
+            workingDaysRule: 'shift_based', // Default, can be updated later
+            paidLeaveTypes: ['paid', 'sick', 'casual', 'annual'],
+            unpaidLeaveTypes: ['unpaid'],
+            halfDayDeductionRule: 'half_day',
+            effectiveFrom: new Date(request.dateOfJoining),
+            version: 1,
+            isActive: true,
+            createdBy: createdByUserId,
+          });
+        }
+      }
+
+      // Create Leave Balances for current year (only if employee is new)
+      if (isNewEmployee) {
+        const currentYear = new Date().getFullYear();
+        const leaveTypes = ['paid', 'unpaid', 'sick', 'casual', 'annual'];
+        const leaveBalances = {
+          paid: 12,
+          unpaid: 0,
+          sick: 10,
+          casual: 8,
+          annual: 20,
+        };
+
+        // Check if leave balances already exist for this year
+        const existingBalances = await LeaveBalance.find({
+          employeeId: employee._id,
+          year: currentYear,
+        });
+
+        if (existingBalances.length === 0) {
+          for (const leaveType of leaveTypes) {
+            await LeaveBalance.create({
+              employeeId: employee._id,
+              leaveType: leaveType as any,
+              totalDays: leaveBalances[leaveType as keyof typeof leaveBalances],
+              usedDays: 0,
+              availableDays: leaveBalances[leaveType as keyof typeof leaveBalances],
+              year: currentYear,
+              lastUpdatedBy: createdByUserId,
+              lastUpdatedAt: new Date(),
+            });
+          }
+        }
       }
 
       // Store request ID before deletion (needed for audit and notification)
@@ -270,11 +331,15 @@ export async function PUT(
 
       // Create notification for employee (if user account exists)
       try {
+        const notificationMessage = isNewEmployee
+          ? `Your onboarding has been approved. Your Employee ID is ${employeeId}. Default password: ${defaultPassword}`
+          : `Your onboarding has been approved. Your Employee ID is ${employeeId}.`;
+        
         await createNotification(
           user._id.toString(),
           'onboarding_approved',
           'Onboarding Approved',
-          `Your onboarding has been approved. Your Employee ID is ${employeeId}. Default password: ${defaultPassword}`,
+          notificationMessage,
           '/dashboard/employee',
           requestId
         );
@@ -288,10 +353,13 @@ export async function PUT(
       await OnboardingRequest.findByIdAndDelete(request._id);
 
       return NextResponse.json({
-        message: 'Onboarding approved successfully',
+        message: isNewEmployee
+          ? 'Onboarding approved successfully. Employee and user account created.'
+          : 'Onboarding approved successfully. Existing employee and user account updated.',
         employeeId,
-        defaultPassword, // Share with HR to communicate to employee
+        defaultPassword: isNewEmployee ? defaultPassword : 'Password already set',
         employee,
+        isNewEmployee,
       });
     } else if (action === 'reject') {
       if (request.status !== 'submitted' && request.status !== 'changes_requested') {
@@ -410,7 +478,7 @@ export async function PUT(
         request,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       const errorMessages = error.issues.map((issue) => {
         const path = issue.path.join('.');
@@ -424,8 +492,27 @@ export async function PUT(
         { status: 400 }
       );
     }
+    
+    // Handle MongoDB duplicate key errors
+    if (error.code === 11000 || error.codeName === 'DuplicateKey') {
+      const duplicateField = Object.keys(error.keyPattern || {})[0] || 'field';
+      return NextResponse.json(
+        {
+          error: `A record with this ${duplicateField} already exists. Please check if the employee or user already exists.`,
+          duplicateField,
+        },
+        { status: 409 }
+      );
+    }
+    
     console.error('Error updating onboarding request:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: error.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: 500 }
+    );
   }
 }
 
