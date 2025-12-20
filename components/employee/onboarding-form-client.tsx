@@ -118,6 +118,7 @@ export default function OnboardingFormClient() {
   const [saving, setSaving] = useState(false);
   const [request, setRequest] = useState<OnboardingRequest | null>(null);
   const [submission, setSubmission] = useState<OnboardingSubmission | null>(null);
+  const [offer, setOffer] = useState<any>(null); // Store offer data for compensation
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
   const [isHRView, setIsHRView] = useState(false);
@@ -181,6 +182,7 @@ export default function OnboardingFormClient() {
       const data = await response.json();
       setRequest(data.request);
       setSubmission(data.submission);
+      setOffer(data.offer || null); // Store offer data if available
       
       // Check if HR or Manager is viewing - only if session exists and user is logged in
       if (session?.user) {
@@ -239,12 +241,40 @@ export default function OnboardingFormClient() {
           personalEmail: personalDetails.personalEmail || data.request.personalEmail || data.request.email || '',
         };
 
+        // Merge compensation data from offer if available (for employees, this should be read-only)
+        let compensationPayroll = data.submission.compensationPayroll || {};
+        if (data.offer?.compensation) {
+          // Use offer compensation data, but preserve bank details from submission if already filled
+          const allowances = (data.offer.compensation.lta || 0) + 
+                            (data.offer.compensation.medicalAllowance || 0) + 
+                            (data.offer.compensation.specialAllowance || 0) +
+                            (data.offer.compensation.performanceBonus || 0) +
+                            (data.offer.compensation.otherBenefits || 0);
+          
+          compensationPayroll = {
+            ...compensationPayroll,
+            // Override with offer data (these are from the offer and should be read-only)
+            annualCTC: data.offer.compensation.annualCTC,
+            basicSalary: data.offer.compensation.basicSalary,
+            hra: data.offer.compensation.hra,
+            allowances: allowances,
+            payFrequency: compensationPayroll.payFrequency || 'monthly',
+            pfApplicable: compensationPayroll.pfApplicable !== undefined ? compensationPayroll.pfApplicable : true,
+            esiApplicable: compensationPayroll.esiApplicable !== undefined ? compensationPayroll.esiApplicable : (data.offer.compensation.annualCTC < 21000),
+            // Keep bank details from submission (employee needs to fill these)
+            bankName: compensationPayroll.bankName || '',
+            accountNumber: compensationPayroll.accountNumber || '',
+            ifscCode: compensationPayroll.ifscCode || '',
+            bankProofUrl: compensationPayroll.bankProofUrl,
+          };
+        }
+
         setFormData({
           personalDetails: mergedPersonalDetails,
           addressDetails: data.submission.addressDetails || {},
           identityKYC: data.submission.identityKYC || {},
           employmentDetails: mergedEmploymentDetails,
-          compensationPayroll: data.submission.compensationPayroll || {},
+          compensationPayroll: compensationPayroll,
           statutoryTax: data.submission.statutoryTax || {},
           educationDetails: Array.isArray(data.submission.educationDetails) ? data.submission.educationDetails : [],
           previousEmployment: Array.isArray(data.submission.previousEmployment) ? data.submission.previousEmployment : [],
@@ -282,7 +312,30 @@ export default function OnboardingFormClient() {
             probationStatus: false,
             probationPeriodMonths: undefined,
           },
-          compensationPayroll: {},
+          compensationPayroll: (() => {
+            // If offer data exists, populate compensation from offer
+            if (data.offer?.compensation) {
+              const allowances = (data.offer.compensation.lta || 0) + 
+                                (data.offer.compensation.medicalAllowance || 0) + 
+                                (data.offer.compensation.specialAllowance || 0) +
+                                (data.offer.compensation.performanceBonus || 0) +
+                                (data.offer.compensation.otherBenefits || 0);
+              
+              return {
+                annualCTC: data.offer.compensation.annualCTC,
+                basicSalary: data.offer.compensation.basicSalary,
+                hra: data.offer.compensation.hra,
+                allowances: allowances,
+                payFrequency: 'monthly',
+                pfApplicable: true,
+                esiApplicable: data.offer.compensation.annualCTC < 21000,
+                bankName: '',
+                accountNumber: '',
+                ifscCode: '',
+              };
+            }
+            return {};
+          })(),
           statutoryTax: {},
           educationDetails: [{ qualification: '', degree: '', institution: '', yearOfPassing: new Date().getFullYear() }],
           previousEmployment: [],
@@ -1806,9 +1859,31 @@ export default function OnboardingFormClient() {
         );
 
       case 'compensationPayroll':
+        // Compensation details from offer are ALWAYS uneditable for employees
+        // Only HR in edit mode can modify them
+        const hasOfferData = offer !== null;
+        const isCompensationReadOnly = (hasOfferData || (stepData.annualCTC && stepData.basicSalary && stepData.hra !== undefined)) && !isHREditMode;
+        
         return (
           <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Compensation & Payroll</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Compensation & Payroll</h3>
+              {hasOfferData && (
+                <Badge variant="outline" className="text-xs">
+                  From Offer Letter
+                </Badge>
+              )}
+            </div>
+            
+            {hasOfferData && (
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>Note:</strong> Compensation details are fetched from your offer letter and cannot be modified. 
+                  Please review the information below and provide your bank details for salary processing.
+                </p>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Annual CTC (₹) *</Label>
@@ -1821,8 +1896,9 @@ export default function OnboardingFormClient() {
                       annualCTC: parseFloat(e.target.value) || 0,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   required
+                  className={isCompensationReadOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}
                 />
               </div>
               <div>
@@ -1836,8 +1912,9 @@ export default function OnboardingFormClient() {
                       basicSalary: parseFloat(e.target.value) || 0,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   required
+                  className={isCompensationReadOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}
                 />
               </div>
             </div>
@@ -1853,8 +1930,9 @@ export default function OnboardingFormClient() {
                       hra: parseFloat(e.target.value) || 0,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   required
+                  className={isCompensationReadOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}
                 />
               </div>
               <div>
@@ -1868,8 +1946,9 @@ export default function OnboardingFormClient() {
                       allowances: parseFloat(e.target.value) || 0,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   required
+                  className={isCompensationReadOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}
                 />
               </div>
             </div>
@@ -1883,9 +1962,9 @@ export default function OnboardingFormClient() {
                     payFrequency: value,
                   });
                 }}
-                disabled={isReadOnly}
+                disabled={isReadOnly || isCompensationReadOnly}
               >
-                <SelectTrigger>
+                <SelectTrigger className={isCompensationReadOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1907,7 +1986,7 @@ export default function OnboardingFormClient() {
                       pfApplicable: e.target.checked,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   className="rounded"
                 />
                 <Label htmlFor="pfApplicable">PF Applicable</Label>
@@ -1923,13 +2002,19 @@ export default function OnboardingFormClient() {
                       esiApplicable: e.target.checked,
                     });
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isCompensationReadOnly}
                   className="rounded"
                 />
                 <Label htmlFor="esiApplicable">ESI Applicable</Label>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-sm font-semibold mb-3">Bank Details *</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Please provide your bank account details for salary processing.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label>Bank Name *</Label>
                 <Input
@@ -2024,6 +2109,7 @@ export default function OnboardingFormClient() {
                     )}
                   </>
                 )}
+              </div>
               </div>
             </div>
           </div>

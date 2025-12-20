@@ -173,6 +173,18 @@ export default function EmployeeDetailsClient() {
   // Assignment modal state
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [assignmentConflictError, setAssignmentConflictError] = useState<{ error: string; conflicts?: string[] } | null>(null);
+  const [existingAssignmentId, setExistingAssignmentId] = useState<string | null>(null);
+  
+  // Password change modal state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [employeeUserId, setEmployeeUserId] = useState<string | null>(null);
+  
   const [assignmentFormData, setAssignmentFormData] = useState({
     shiftId: '',
     assignmentType: 'permanent' as 'permanent' | 'temporary',
@@ -235,7 +247,7 @@ export default function EmployeeDetailsClient() {
       shiftId: '',
       assignmentType: 'permanent',
       assignmentScope: 'employee',
-      employeeId: (params.id as string) || (employee?._id) || '',
+      employeeId: (params.id as string) || (data?.employee?._id) || '',
       teamManagerId: '',
       departmentRole: '',
       startDate: '',
@@ -247,6 +259,9 @@ export default function EmployeeDetailsClient() {
 
   const handleCreateAssignment = async () => {
     try {
+      setAssignmentConflictError(null);
+      setExistingAssignmentId(null);
+      
       const response = await fetch('/api/shifts/assignments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,16 +274,73 @@ export default function EmployeeDetailsClient() {
         toast.success('Shift assigned successfully');
         setAssignmentDialogOpen(false);
         resetAssignmentForm();
+        setAssignmentConflictError(null);
+        setExistingAssignmentId(null);
         // Refresh employee details to show updated shift
         if (params.id) {
           fetchEmployeeDetails(params.id as string);
         }
       } else {
-        toast.error(responseData.error || 'Failed to assign shift');
+        // Check if there's a conflict error - if so, find existing assignment
+        if (response.status === 400 && responseData.error?.includes('conflict')) {
+          setAssignmentConflictError({ 
+            error: responseData.error, 
+            conflicts: responseData.conflicts 
+          });
+          
+          // Try to find existing assignment to edit
+          if (params.id && assignmentFormData.assignmentScope === 'employee') {
+            try {
+              const assignmentsResponse = await fetch(`/api/shifts/assignments?employeeId=${params.id}&isActive=true`);
+              if (assignmentsResponse.ok) {
+                const assignments = await assignmentsResponse.json();
+                // Find the most recent permanent assignment
+                const existing = assignments.find((a: any) => 
+                  a.assignmentType === 'permanent' && 
+                  a.assignmentScope === 'employee'
+                );
+                if (existing) {
+                  setExistingAssignmentId(existing._id);
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching existing assignments:', err);
+            }
+          }
+          
+          toast.error(responseData.error || 'Failed to assign shift');
+        } else {
+          toast.error(responseData.error || 'Failed to assign shift');
+        }
       }
     } catch (error) {
       console.error('Error assigning shift:', error);
       toast.error('Failed to assign shift');
+    }
+  };
+
+  const handleEditExistingAssignment = async () => {
+    if (!existingAssignmentId) return;
+    
+    try {
+      // For now, we'll deactivate the old assignment and create a new one
+      // In a full implementation, you'd have a PUT endpoint for assignments
+      const response = await fetch(`/api/shifts/assignments/${existingAssignmentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Now create the new assignment
+        setExistingAssignmentId(null);
+        setAssignmentConflictError(null);
+        // Retry the assignment
+        await handleCreateAssignment();
+      } else {
+        toast.error('Failed to update existing assignment');
+      }
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      toast.error('Failed to update assignment');
     }
   };
 
@@ -287,6 +359,33 @@ export default function EmployeeDetailsClient() {
           managerId: detailsData.employee.managerId?._id || '',
           isActive: detailsData.employee.isActive,
         });
+        
+        // Fetch user ID for password change functionality (if user can change password)
+        if (detailsData.employee.email && session) {
+          // Check if current user can change password for this employee
+          const canChange = 
+            session.user.role === 'super_admin' || 
+            session.user.role === 'hr' ||
+            (session.user.role === 'manager' && (
+              session.user.email === detailsData.employee.email ||
+              (detailsData.employee.managerId && session.user.employeeId === detailsData.employee.managerId._id)
+            )) ||
+            (session.user.role === 'employee' && session.user.email === detailsData.employee.email);
+          
+          if (canChange) {
+            try {
+              const userResponse = await fetch(`/api/users?email=${detailsData.employee.email}`);
+              if (userResponse.ok) {
+                const userData = await userResponse.json();
+                if (userData && userData._id) {
+                  setEmployeeUserId(userData._id);
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching user ID:', err);
+            }
+          }
+        }
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to fetch employee details');
@@ -370,6 +469,95 @@ export default function EmployeeDetailsClient() {
       fetchAvailableManagers(data.employee._id);
       setManagerDialogOpen(true);
     }
+  };
+
+  const handleChangePassword = async () => {
+    // Validate passwords
+    if (!passwordFormData.newPassword) {
+      toast.error('New password is required');
+      return;
+    }
+
+    if (passwordFormData.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    // Check if changing own password or someone else's
+    const isOwnPassword = !employeeUserId || employeeUserId === session?.user.id;
+    
+    if (isOwnPassword && !passwordFormData.currentPassword) {
+      toast.error('Current password is required to change your password');
+      return;
+    }
+
+    try {
+      const requestBody: any = {
+        newPassword: passwordFormData.newPassword,
+      };
+
+      if (employeeUserId) {
+        requestBody.userId = employeeUserId;
+      }
+
+      if (isOwnPassword) {
+        requestBody.currentPassword = passwordFormData.currentPassword;
+      }
+
+      const response = await fetch('/api/users/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        toast.success('Password changed successfully');
+        setPasswordDialogOpen(false);
+        setPasswordFormData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+      } else {
+        toast.error(responseData.error || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Failed to change password');
+    }
+  };
+
+  const canChangePassword = () => {
+    if (!session || !data?.employee) return false;
+    
+    // Super admin and HR can change anyone's password
+    if (session.user.role === 'super_admin' || session.user.role === 'hr') {
+      return true;
+    }
+    
+    // Manager can change team members' passwords
+    if (session.user.role === 'manager') {
+      // Can change own password
+      if (session.user.email === data.employee.email) {
+        return true;
+      }
+      // Can change team members' passwords (check if employee has manager assigned)
+      return data.employee.managerId && session.user.employeeId === data.employee.managerId._id;
+    }
+    
+    // Employee can only change own password
+    if (session.user.role === 'employee') {
+      return session.user.email === data.employee.email;
+    }
+    
+    return false;
   };
 
   const canViewHealthIndicators = session?.user.role === 'manager' || session?.user.role === 'hr' || session?.user.role === 'super_admin';
@@ -1219,6 +1407,22 @@ export default function EmployeeDetailsClient() {
                         </Button>
                       </>
                     )}
+                    {canChangePassword() && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setPasswordFormData({
+                            currentPassword: '',
+                            newPassword: '',
+                            confirmPassword: '',
+                          });
+                          setPasswordDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Change Password
+                      </Button>
+                    )}
               </div>
             </CardContent>
           </Card>
@@ -1533,6 +1737,8 @@ export default function EmployeeDetailsClient() {
           setAssignmentDialogOpen(open);
           if (!open) {
             resetAssignmentForm();
+            setAssignmentConflictError(null);
+            setExistingAssignmentId(null);
           }
         }}>
           <DialogContent className="max-w-2xl">
@@ -1540,6 +1746,38 @@ export default function EmployeeDetailsClient() {
               <DialogTitle>Assign Shift</DialogTitle>
               <DialogDescription>Assign a shift to {employee?.name || 'employee'}</DialogDescription>
             </DialogHeader>
+
+            {/* Conflict Error Display */}
+            {assignmentConflictError && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                      {assignmentConflictError.error}
+                    </p>
+                    {assignmentConflictError.conflicts && assignmentConflictError.conflicts.length > 0 && (
+                      <ul className="list-disc list-inside text-sm text-orange-700 dark:text-orange-300 mb-3 space-y-1">
+                        {assignmentConflictError.conflicts.map((conflict, idx) => (
+                          <li key={idx}>{conflict}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {existingAssignmentId && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleEditExistingAssignment}
+                        className="mt-2"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Existing Shift Assignment
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
@@ -1814,6 +2052,76 @@ export default function EmployeeDetailsClient() {
             <Button onClick={handleAssignManager}>
               <Save className="h-4 w-4 mr-2" />
               Assign Manager
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Change Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={(open) => {
+        setPasswordDialogOpen(open);
+        if (!open) {
+          setPasswordFormData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+          });
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              {session?.user.email === employee.email 
+                ? 'Change your password'
+                : `Change password for ${employee.name}`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {session?.user.email === employee.email && (
+              <div>
+                <Label htmlFor="currentPassword">Current Password *</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={passwordFormData.currentPassword}
+                  onChange={(e) => setPasswordFormData({ ...passwordFormData, currentPassword: e.target.value })}
+                  placeholder="Enter current password"
+                />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="newPassword">New Password *</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordFormData.newPassword}
+                onChange={(e) => setPasswordFormData({ ...passwordFormData, newPassword: e.target.value })}
+                placeholder="Enter new password (min 8 characters)"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Password must be at least 8 characters long
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="confirmPassword">Confirm New Password *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordFormData.confirmPassword}
+                onChange={(e) => setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value })}
+                placeholder="Confirm new password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleChangePassword}>
+              <Save className="h-4 w-4 mr-2" />
+              Change Password
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,598 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Briefcase,
+  MapPin,
+  Users,
+  Calendar,
+  DollarSign,
+} from 'lucide-react';
+import { formatDate, formatErrorMessage } from '@/lib/utils/format';
+import { SkeletonCard } from '@/components/shared/skeleton-loader';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+interface JobRequisition {
+  _id: string;
+  jobRequisitionId: string;
+  jobTitle: string;
+  department: string;
+  location: string;
+  employmentType: 'full_time' | 'part_time' | 'contract' | 'intern';
+  status: 'open' | 'on_hold' | 'closed' | 'cancelled';
+  numberOfPositions: number;
+  positionsFilled: number;
+  hiringManagerId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  interviewRounds?: Array<{
+    roundName: string;
+    roundOrder: number;
+    roundType: string;
+  }>;
+}
+
+export default function JobRequisitionsTab() {
+  const [loading, setLoading] = useState(true);
+  const [requisitions, setRequisitions] = useState<JobRequisition[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedRequisition, setSelectedRequisition] = useState<JobRequisition | null>(null);
+  const [managers, setManagers] = useState<Array<{ _id: string; name: string; employeeId: string }>>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const [formData, setFormData] = useState({
+    jobTitle: '',
+    department: '',
+    location: '',
+    employmentType: 'full_time' as 'full_time' | 'part_time' | 'contract' | 'intern',
+    description: '',
+    requirements: '',
+    responsibilities: '',
+    requiredSkills: [] as string[],
+    experienceRange: { min: 0, max: 0 },
+    hiringManagerId: '',
+    numberOfPositions: 1,
+    interviewRounds: [] as Array<{
+      roundName: string;
+      roundOrder: number;
+      roundType: string;
+      requiredInterviewers: number;
+      evaluationCriteria: Array<{ criterion: string; weightage: number }>;
+      isMandatory: boolean;
+    }>,
+  });
+
+  useEffect(() => {
+    fetchRequisitions();
+    fetchManagers();
+  }, [statusFilter, searchTerm]);
+
+  const fetchRequisitions = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (searchTerm) params.append('search', searchTerm);
+
+      const response = await fetch(`/api/interviews/job-requisitions?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRequisitions(data);
+      } else {
+        toast.error('Failed to fetch job requisitions');
+      }
+    } catch (error) {
+      console.error('Error fetching requisitions:', error);
+      toast.error('Error fetching job requisitions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchManagers = async () => {
+    try {
+      const response = await fetch('/api/employees');
+      if (response.ok) {
+        const data = await response.json();
+        setManagers(data.filter((emp: any) => 
+          emp.role?.toLowerCase().includes('manager') || emp.role?.toLowerCase().includes('mgr')
+        ));
+      }
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+    }
+  };
+
+  const handleCreate = async () => {
+    try {
+      if (!formData.jobTitle || !formData.department || !formData.hiringManagerId) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Add default interview rounds if none provided
+      if (formData.interviewRounds.length === 0) {
+        formData.interviewRounds = [
+          {
+            roundName: 'HR Screening',
+            roundOrder: 1,
+            roundType: 'hr_screening',
+            requiredInterviewers: 1,
+            evaluationCriteria: [
+              { criterion: 'Communication', weightage: 40 },
+              { criterion: 'Culture Fit', weightage: 30 },
+              { criterion: 'Experience', weightage: 30 },
+            ],
+            isMandatory: true,
+          },
+          {
+            roundName: 'Technical Round',
+            roundOrder: 2,
+            roundType: 'technical',
+            requiredInterviewers: 1,
+            evaluationCriteria: [
+              { criterion: 'Technical Skills', weightage: 50 },
+              { criterion: 'Problem Solving', weightage: 30 },
+              { criterion: 'Communication', weightage: 20 },
+            ],
+            isMandatory: true,
+          },
+        ];
+      }
+
+      const response = await fetch('/api/interviews/job-requisitions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Job requisition created successfully');
+        setIsCreateDialogOpen(false);
+        resetForm();
+        fetchRequisitions();
+      } else {
+        toast.error(formatErrorMessage(data.error, 'Failed to create job requisition'));
+      }
+    } catch (error: any) {
+      console.error('Error creating requisition:', error);
+      toast.error(formatErrorMessage(error, 'Failed to create job requisition'));
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedRequisition) return;
+
+    try {
+      const response = await fetch('/api/interviews/job-requisitions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedRequisition._id,
+          ...formData,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Job requisition updated successfully');
+        setIsEditDialogOpen(false);
+        resetForm();
+        fetchRequisitions();
+      } else {
+        toast.error(formatErrorMessage(data.error, 'Failed to update job requisition'));
+      }
+    } catch (error: any) {
+      console.error('Error updating requisition:', error);
+      toast.error(formatErrorMessage(error, 'Failed to update job requisition'));
+    }
+  };
+
+  const handleEdit = (requisition: JobRequisition) => {
+    setSelectedRequisition(requisition);
+    setFormData({
+      jobTitle: requisition.jobTitle,
+      department: requisition.department,
+      location: requisition.location,
+      employmentType: requisition.employmentType,
+      description: '',
+      requirements: '',
+      responsibilities: '',
+      requiredSkills: [],
+      experienceRange: { min: 0, max: 0 },
+      hiringManagerId: requisition.hiringManagerId?._id || '',
+      numberOfPositions: requisition.numberOfPositions,
+      interviewRounds: (requisition.interviewRounds || []).map(round => ({
+        roundName: round.roundName,
+        roundOrder: round.roundOrder,
+        roundType: round.roundType,
+        requiredInterviewers: 1,
+        evaluationCriteria: [],
+        isMandatory: true,
+      })),
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      jobTitle: '',
+      department: '',
+      location: '',
+      employmentType: 'full_time',
+      description: '',
+      requirements: '',
+      responsibilities: '',
+      requiredSkills: [],
+      experienceRange: { min: 0, max: 0 },
+      hiringManagerId: '',
+      numberOfPositions: 1,
+      interviewRounds: [],
+    });
+    setSelectedRequisition(null);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'on_hold':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  if (loading) {
+    return <SkeletonCard />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold">Job Requisitions</h2>
+          <p className="text-sm text-muted-foreground">Create and manage job openings</p>
+        </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Job Requisition
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <div>
+              <Label>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="sm:col-span-2">
+              <Label>Search</Label>
+              <Input
+                placeholder="Search by job title, department, or requisition ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Requisitions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Job Requisitions</CardTitle>
+          <CardDescription>{requisitions.length} requisition(s) found</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {requisitions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No job requisitions found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Requisition ID</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Positions</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Hiring Manager</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requisitions.map((req) => (
+                    <TableRow key={req._id}>
+                      <TableCell className="font-mono text-xs">{req.jobRequisitionId}</TableCell>
+                      <TableCell className="font-medium">{req.jobTitle}</TableCell>
+                      <TableCell>{req.department}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {req.location}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {req.positionsFilled}/{req.numberOfPositions}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(req.status)}>
+                          {req.status.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{req.hiringManagerId?.name || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(req)}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Job Requisition</DialogTitle>
+            <DialogDescription>Create a new job opening with interview rounds</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Job Title *</Label>
+                <Input
+                  value={formData.jobTitle}
+                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Department *</Label>
+                <Input
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Location *</Label>
+                <Input
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Employment Type *</Label>
+                <Select
+                  value={formData.employmentType}
+                  onValueChange={(value: any) => setFormData({ ...formData, employmentType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full_time">Full Time</SelectItem>
+                    <SelectItem value="part_time">Part Time</SelectItem>
+                    <SelectItem value="contract">Contract</SelectItem>
+                    <SelectItem value="intern">Intern</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Description *</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                required
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Requirements *</Label>
+              <Textarea
+                value={formData.requirements}
+                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                required
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Min Experience (Years) *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.experienceRange.min}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    experienceRange: { ...formData.experienceRange, min: parseInt(e.target.value) || 0 }
+                  })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Max Experience (Years)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.experienceRange.max}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    experienceRange: { ...formData.experienceRange, max: parseInt(e.target.value) || 0 }
+                  })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Hiring Manager *</Label>
+                <Select
+                  value={formData.hiringManagerId}
+                  onValueChange={(value) => setFormData({ ...formData, hiringManagerId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {managers.map((mgr) => (
+                      <SelectItem key={mgr._id} value={mgr._id}>
+                        {mgr.name} ({mgr.employeeId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Number of Positions *</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={formData.numberOfPositions}
+                  onChange={(e) => setFormData({ ...formData, numberOfPositions: parseInt(e.target.value) || 1 })}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCreateDialogOpen(false);
+              resetForm();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Job Requisition</DialogTitle>
+            <DialogDescription>Update job requisition details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={selectedRequisition?.status || 'open'}
+                  onValueChange={(value) => {
+                    if (selectedRequisition) {
+                      setSelectedRequisition({ ...selectedRequisition, status: value as any });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Add other editable fields as needed */}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              resetForm();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+

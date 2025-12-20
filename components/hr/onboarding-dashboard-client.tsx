@@ -37,6 +37,13 @@ import {
   Copy,
   RefreshCw,
   Trash2,
+  Briefcase,
+  Calendar,
+  FileCheck,
+  Award,
+  ExternalLink,
+  UserCheck,
+  TrendingUp,
 } from 'lucide-react';
 import { formatDate, formatErrorMessage } from '@/lib/utils/format';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
@@ -72,6 +79,27 @@ interface OnboardingRequest {
   rejectionReason?: string;
   changeRequestComments?: string;
   reminderCount: number;
+  // Hiring pipeline integration
+  candidateId?: string;
+  offerId?: string;
+  source?: 'manual' | 'hiring_pipeline';
+  candidate?: {
+    _id: string;
+    candidateId: string;
+    jobRequisitionId?: {
+      _id: string;
+      jobTitle: string;
+      department: string;
+    };
+  };
+  offer?: {
+    _id: string;
+    offerId: string;
+    compensation?: {
+      annualCTC: number;
+      currency: string;
+    };
+  };
 }
 
 interface OnboardingCounts {
@@ -91,11 +119,12 @@ export default function OnboardingDashboardClient() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<OnboardingRequest | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_changes' | 'view' | 'delete' | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_changes' | 'view' | 'delete' | 'view_candidate' | null>(null);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all'); // 'all', 'manual', 'hiring_pipeline'
   const [searchTerm, setSearchTerm] = useState('');
   
   // Create form data
@@ -127,7 +156,7 @@ export default function OnboardingDashboardClient() {
   useEffect(() => {
     fetchOnboardingRequests();
     fetchManagers();
-  }, [statusFilter, departmentFilter, searchTerm]);
+  }, [statusFilter, departmentFilter, sourceFilter, searchTerm]);
 
   const fetchOnboardingRequests = async () => {
     setLoading(true);
@@ -135,15 +164,31 @@ export default function OnboardingDashboardClient() {
       const params = new URLSearchParams();
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (departmentFilter !== 'all') params.append('department', departmentFilter);
+      if (sourceFilter !== 'all') {
+        // For hiring pipeline, we'll filter on the frontend since API doesn't support it yet
+        // This can be enhanced later
+      }
       if (searchTerm) params.append('search', searchTerm);
 
       const response = await fetch(`/api/onboarding?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         // Filter out 100% completed onboarding requests (exclude those that are both 100% and status completed)
-        const filteredRequests = (data.requests || []).filter((req: OnboardingRequest) => 
+        let filteredRequests = (data.requests || []).filter((req: OnboardingRequest) => 
           !(req.progressPercentage === 100 && req.status === 'completed')
         );
+        
+        // Apply source filter
+        if (sourceFilter === 'hiring_pipeline') {
+          filteredRequests = filteredRequests.filter((req: OnboardingRequest) => 
+            req.candidateId || req.source === 'hiring_pipeline'
+          );
+        } else if (sourceFilter === 'manual') {
+          filteredRequests = filteredRequests.filter((req: OnboardingRequest) => 
+            !req.candidateId && req.source !== 'hiring_pipeline'
+          );
+        }
+        
         setRequests(filteredRequests);
         setCounts(data.counts || {});
         
@@ -224,13 +269,21 @@ export default function OnboardingDashboardClient() {
     }
   };
 
-  const handleAction = async (request: OnboardingRequest, action: 'approve' | 'reject' | 'request_changes' | 'view' | 'delete') => {
+  const handleAction = async (request: OnboardingRequest, action: 'approve' | 'reject' | 'request_changes' | 'view' | 'delete' | 'view_candidate') => {
     setSelectedRequest(request);
     setActionType(action);
     
     if (action === 'view') {
       // Navigate to onboarding form page with token
       window.location.href = `/onboarding/${request.token}`;
+      return;
+    }
+
+    if (action === 'view_candidate') {
+      // Navigate to candidate details in hiring pipeline
+      if (request.candidateId) {
+        window.open(`/dashboard/hr/candidates?candidateId=${request.candidateId}`, '_blank');
+      }
       return;
     }
 
@@ -455,6 +508,24 @@ export default function OnboardingDashboardClient() {
         </Button>
       </div>
 
+      {/* Hiring Pipeline Integration Info */}
+      {(requests.some(r => r.candidateId || r.source === 'hiring_pipeline')) && (
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm sm:text-base mb-1">Hiring Pipeline Integration</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Some onboarding requests were automatically created from accepted offers in the hiring pipeline. 
+                  You can view the candidate details and offer information for these requests.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Statistics Cards */}
       <div className="grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         <Card>
@@ -553,6 +624,19 @@ export default function OnboardingDashboardClient() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Source</Label>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="hiring_pipeline">From Hiring Pipeline</SelectItem>
+                  <SelectItem value="manual">Manual Entry</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="sm:col-span-2 md:col-span-2">
               <Label className="text-xs sm:text-sm">Search</Label>
               <Input
@@ -594,6 +678,12 @@ export default function OnboardingDashboardClient() {
                         <Badge className={getStatusColor(request.status)}>
                           <span className="text-xs">{request.status.replace('_', ' ')}</span>
                         </Badge>
+                        {(request.candidateId || request.source === 'hiring_pipeline') && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-300 dark:border-green-800">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            <span className="text-xs">From Hiring</span>
+                          </Badge>
+                        )}
                         <span className="text-xs sm:text-sm text-muted-foreground break-all">
                           {request.onboardingId}
                         </span>
@@ -615,7 +705,27 @@ export default function OnboardingDashboardClient() {
                             <span className="font-medium">Designation:</span> {request.designation}
                           </div>
                         )}
+                        {request.candidate?.candidateId && (
+                          <div>
+                            <span className="font-medium">Candidate ID:</span> {request.candidate.candidateId}
+                          </div>
+                        )}
+                        {request.offer?.offerId && (
+                          <div>
+                            <span className="font-medium">Offer ID:</span> {request.offer.offerId}
+                          </div>
+                        )}
+                        {request.offer?.compensation && (
+                          <div>
+                            <span className="font-medium">CTC:</span> {request.offer.compensation.currency} {request.offer.compensation.annualCTC.toLocaleString()}
+                          </div>
+                        )}
                       </div>
+                      {request.candidate?.jobRequisitionId && (
+                        <div className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                          <span className="font-medium">Position:</span> {request.candidate.jobRequisitionId.jobTitle} ({request.candidate.jobRequisitionId.department})
+                        </div>
+                      )}
                       <div className="mt-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Progress:</span>
@@ -640,6 +750,19 @@ export default function OnboardingDashboardClient() {
                       )}
                     </div>
                     <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto sm:ml-4 flex-wrap">
+                      {(request.candidateId || request.source === 'hiring_pipeline') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAction(request, 'view_candidate')}
+                          className="text-xs"
+                          title="View candidate in hiring pipeline"
+                        >
+                          <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden xs:inline">View Candidate</span>
+                          <span className="xs:hidden">Candidate</span>
+                        </Button>
+                      )}
                       {request.status === 'submitted' && (
                         <>
                           <Button

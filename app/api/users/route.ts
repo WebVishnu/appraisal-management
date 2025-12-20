@@ -21,16 +21,45 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-// GET - List all HR and Manager users
+// GET - List all HR and Manager users, or get user by email
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session || session.user.role !== 'super_admin') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
+
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get('email');
+
+    // If email query param provided, return single user (for password change functionality)
+    if (email) {
+      // Allow HR, Manager, and Super Admin to query users by email
+      if (session.user.role !== 'super_admin' && session.user.role !== 'hr' && session.user.role !== 'manager') {
+        // Employees can only query their own user
+        if (session.user.email !== email.toLowerCase()) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase() })
+        .select('-password');
+
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(user);
+    }
+
+    // Otherwise, list all users (super_admin and hr can list users)
+    // HR needs this to select interviewers
+    if (session.user.role !== 'super_admin' && session.user.role !== 'hr') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const users = await User.find({
       role: { $in: ['hr', 'manager'] },
@@ -51,7 +80,8 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session || session.user.role !== 'super_admin') {
+    // Allow super_admin and hr to create users (hr can create interviewers/managers)
+    if (!session || (session.user.role !== 'super_admin' && session.user.role !== 'hr')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

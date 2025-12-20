@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import OnboardingDashboardClient from '@/components/hr/onboarding-dashboard-client';
+import HiringPipelineClient from '@/components/hr/hiring-pipeline-client';
 
 export default async function OnboardingPage() {
   const user = await getCurrentUser();
@@ -9,5 +9,5 @@ export default async function OnboardingPage() {
     redirect('/dashboard');
   }
 
-  return <OnboardingDashboardClient />;
+  return <HiringPipelineClient />;
 }

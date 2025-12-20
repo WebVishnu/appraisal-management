@@ -93,6 +93,13 @@ export async function GET(
       onboardingRequestId: request._id,
     });
 
+    // Fetch offer data if this onboarding was created from an offer
+    let offer = null;
+    const Offer = (await import('@/lib/models/Offer')).default;
+    offer = await Offer.findOne({
+      convertedToOnboardingRequestId: request._id,
+    }).select('compensation jobTitle department location employmentType startDate probationPeriod');
+
     // Track if this is first access (onboarding started) - only for unauthenticated users (new employees)
     if (!session?.user && request.status === 'invited' && !request.startedAt) {
       request.status = 'in_progress';
@@ -112,6 +119,7 @@ export async function GET(
     return NextResponse.json({
       request,
       submission,
+      offer, // Include offer data for compensation details
     });
   } catch (error: any) {
     console.error('Error fetching onboarding by token:', error);

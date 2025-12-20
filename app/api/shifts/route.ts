@@ -38,19 +38,14 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const isActive = searchParams.get('isActive');
-    const shiftType = searchParams.get('shiftType');
 
     const query: any = {};
-    if (isActive !== null) {
-      query.isActive = isActive === 'true';
-    }
-    if (shiftType) {
-      query.shiftType = shiftType;
+    if (isActive === 'true') {
+      query.isActive = true;
     }
 
     const shifts = await Shift.find(query)
-      .populate('createdBy', 'email name')
-      .sort({ createdAt: -1 });
+      .sort({ name: 1 });
 
     return NextResponse.json(shifts);
   } catch (error) {

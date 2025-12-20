@@ -245,7 +245,7 @@ export async function GET(
       ],
       isActive: true,
     })
-      .populate('shiftId', 'name shiftType startTime endTime workingDays')
+      .populate('shiftId', 'name shiftType startTime endTime workingDays gracePeriod isNightShift')
       .populate('assignedBy', 'email name')
       .sort({ createdAt: -1 })
       .limit(10);

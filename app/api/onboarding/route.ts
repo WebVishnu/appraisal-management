@@ -83,6 +83,55 @@ export async function GET(req: NextRequest) {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    // Populate candidate and offer information for hiring pipeline integration
+    const Candidate = (await import('@/lib/models/Candidate')).default;
+    const Offer = (await import('@/lib/models/Offer')).default;
+    
+    const requestsWithCandidateData = await Promise.all(
+      requests.map(async (request) => {
+        const requestObj: any = request.toObject();
+        
+        // Find candidate by onboardingRequestId
+        const candidate = await Candidate.findOne({
+          onboardingRequestId: request._id,
+          isActive: true,
+        }).populate('jobRequisitionId', 'jobTitle department');
+        
+        if (candidate) {
+          requestObj.candidateId = candidate._id.toString();
+          requestObj.source = 'hiring_pipeline';
+          requestObj.candidate = {
+            _id: candidate._id.toString(),
+            candidateId: candidate.candidateId,
+            jobRequisitionId: candidate.jobRequisitionId && typeof candidate.jobRequisitionId === 'object' && '_id' in candidate.jobRequisitionId ? {
+              _id: (candidate.jobRequisitionId as any)._id.toString(),
+              jobTitle: (candidate.jobRequisitionId as any).jobTitle,
+              department: (candidate.jobRequisitionId as any).department,
+            } : undefined,
+          };
+          
+          // Find offer for this candidate
+          const offer = await Offer.findOne({
+            candidateId: candidate._id,
+            status: 'accepted',
+          }).select('offerId compensation');
+          
+          if (offer) {
+            requestObj.offerId = offer._id.toString();
+            requestObj.offer = {
+              _id: offer._id.toString(),
+              offerId: offer.offerId,
+              compensation: offer.compensation,
+            };
+          }
+        } else {
+          requestObj.source = 'manual';
+        }
+        
+        return requestObj;
+      })
+    );
+
     // Get counts by status
     const statusCounts = await OnboardingRequest.aggregate([
       {
@@ -99,7 +148,7 @@ export async function GET(req: NextRequest) {
     }, {} as Record<string, number>);
 
     return NextResponse.json({
-      requests,
+      requests: requestsWithCandidateData,
       counts,
     });
   } catch (error) {

@@ -85,9 +85,17 @@ export async function GET(
       onboardingRequestId: request._id,
     });
 
+    // Fetch offer data if this onboarding was created from an offer
+    let offer = null;
+    const Offer = (await import('@/lib/models/Offer')).default;
+    offer = await Offer.findOne({
+      convertedToOnboardingRequestId: request._id,
+    }).select('compensation jobTitle department location employmentType startDate probationPeriod');
+
     return NextResponse.json({
       request,
       submission,
+      offer, // Include offer data for compensation details
     });
   } catch (error) {
     console.error('Error fetching onboarding request:', error);
@@ -294,6 +302,76 @@ export async function PUT(
             });
           }
         }
+      }
+
+      // ============================================
+      // CLEANUP: Remove candidate from hiring pipeline
+      // ============================================
+      // When onboarding is approved, the candidate has successfully completed the hiring process.
+      // We need to:
+      // 1. Mark candidate as inactive (removed from active candidates list)
+      // 2. Delete all interviews (no longer needed)
+      // 3. Delete all interview feedback (no longer needed)
+      // 4. Update job requisition positions filled count
+      // 5. Create audit log for tracking
+      // Note: Offers are kept for audit/historical purposes
+      // ============================================
+      
+      const Candidate = (await import('@/lib/models/Candidate')).default;
+      const Interview = (await import('@/lib/models/Interview')).default;
+      const InterviewFeedback = (await import('@/lib/models/InterviewFeedback')).default;
+      
+      const candidate = await Candidate.findOne({
+        onboardingRequestId: request._id,
+        isActive: true,
+      });
+
+      if (candidate) {
+        // Step 1: Mark candidate as converted and inactive (removed from active candidates list)
+        candidate.convertedToEmployeeId = employee._id;
+        candidate.convertedAt = new Date();
+        candidate.status = 'selected';
+        candidate.isActive = false; // This removes candidate from active candidates list
+        await candidate.save();
+
+        // Step 2: Delete all interviews and feedback for this candidate
+        const interviews = await Interview.find({ candidateId: candidate._id });
+        const interviewIds = interviews.map(i => i._id);
+        
+        if (interviewIds.length > 0) {
+          // Delete all interview feedback first (foreign key dependency)
+          const feedbackDeleted = await InterviewFeedback.deleteMany({ interviewId: { $in: interviewIds } });
+          
+          // Delete all interviews
+          const interviewsDeleted = await Interview.deleteMany({ candidateId: candidate._id });
+          
+          console.log(`Cleaned up ${interviewsDeleted.deletedCount} interviews and ${feedbackDeleted.deletedCount} feedback records for candidate ${candidate.candidateId}`);
+        }
+
+        // Step 3: Update job requisition positions filled count
+        const JobRequisition = (await import('@/lib/models/JobRequisition')).default;
+        if (candidate.jobRequisitionId) {
+          await JobRequisition.findByIdAndUpdate(candidate.jobRequisitionId, {
+            $inc: { positionsFilled: 1 },
+          });
+        }
+
+        // Step 4: Create audit log for candidate cleanup
+        const InterviewAuditLog = (await import('@/lib/models/InterviewAuditLog')).default;
+        await InterviewAuditLog.create({
+          candidateId: candidate._id,
+          jobRequisitionId: candidate.jobRequisitionId,
+          action: 'candidate_converted_to_employee',
+          actionDescription: `Candidate ${candidate.candidateId} converted to employee ${employeeId}. ${interviews.length} interviews and their feedback deleted. Candidate marked inactive and removed from active candidates list.`,
+          performedBy: createdByUserId,
+          performedByRole: session.user.role === 'super_admin' ? 'super_admin' : 'hr',
+          timestamp: new Date(),
+          metadata: {
+            employeeId: employee._id.toString(),
+            employeeIdGenerated: employeeId,
+            interviewsDeleted: interviews.length,
+          },
+        });
       }
 
       // Store request ID before deletion (needed for audit and notification)

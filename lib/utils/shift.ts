@@ -91,9 +91,9 @@ export async function getAssignedShift(
 ): Promise<{ shiftId: mongoose.Types.ObjectId; shift: any } | null> {
   const empId = typeof employeeId === 'string' ? new mongoose.Types.ObjectId(employeeId) : employeeId;
   
-  // Normalize date to start of day
+  // Normalize date to start of day (UTC) to match MongoDB date storage
   const queryDate = new Date(date);
-  queryDate.setHours(0, 0, 0, 0);
+  queryDate.setUTCHours(0, 0, 0, 0);
   
   // 1. Check roster first (highest priority)
   const roster = await Roster.findOne({
@@ -102,10 +102,23 @@ export async function getAssignedShift(
   }).populate('shiftId');
   
   if (roster && roster.shiftId) {
-    return {
-      shiftId: roster.shiftId._id,
-      shift: roster.shiftId,
-    };
+    let shift: any;
+    if (typeof roster.shiftId === 'object' && roster.shiftId !== null && '_id' in roster.shiftId) {
+      shift = roster.shiftId;
+    } else {
+      shift = await Shift.findById(roster.shiftId);
+    }
+    if (shift) {
+      const shiftObj = (shift && typeof shift === 'object' && 'toObject' in shift && typeof shift.toObject === 'function')
+        ? shift.toObject()
+        : (typeof shift === 'object' ? shift : null);
+      if (shiftObj && '_id' in shiftObj) {
+        return {
+          shiftId: shiftObj._id,
+          shift: shiftObj,
+        };
+      }
+    }
   }
   
   // 2. Check temporary assignments
@@ -118,25 +131,66 @@ export async function getAssignedShift(
   }).populate('shiftId');
   
   if (tempAssignment && tempAssignment.shiftId) {
-    return {
-      shiftId: tempAssignment.shiftId._id,
-      shift: tempAssignment.shiftId,
-    };
+    let shift: any;
+    if (typeof tempAssignment.shiftId === 'object' && tempAssignment.shiftId !== null && '_id' in tempAssignment.shiftId) {
+      shift = tempAssignment.shiftId;
+    } else {
+      shift = await Shift.findById(tempAssignment.shiftId);
+    }
+    if (shift) {
+      const shiftObj = (shift && typeof shift === 'object' && 'toObject' in shift && typeof shift.toObject === 'function')
+        ? shift.toObject()
+        : (typeof shift === 'object' ? shift : null);
+      if (shiftObj && '_id' in shiftObj) {
+        return {
+          shiftId: shiftObj._id,
+          shift: shiftObj,
+        };
+      }
+    }
   }
   
-  // 3. Check permanent assignments
-  const permanentAssignment = await ShiftAssignment.findOne({
+  // 3. Check permanent assignments (get the most recent active one by effectiveDate)
+  // First try to get one with effectiveDate <= queryDate (currently effective)
+  let permanentAssignment = await ShiftAssignment.findOne({
     employeeId: empId,
     assignmentType: 'permanent',
     isActive: true,
     effectiveDate: { $lte: queryDate },
-  }).populate('shiftId');
+  })
+    .populate('shiftId')
+    .sort({ effectiveDate: -1 }); // Get most recent effective one
+  
+  // If no currently effective assignment, get the most recent active one regardless of effectiveDate
+  // This shows upcoming permanent assignments
+  if (!permanentAssignment) {
+    permanentAssignment = await ShiftAssignment.findOne({
+      employeeId: empId,
+      assignmentType: 'permanent',
+      isActive: true,
+    })
+      .populate('shiftId')
+      .sort({ effectiveDate: -1 }); // Get most recent one
+  }
   
   if (permanentAssignment && permanentAssignment.shiftId) {
-    return {
-      shiftId: permanentAssignment.shiftId._id,
-      shift: permanentAssignment.shiftId,
-    };
+    let shift: any;
+    if (typeof permanentAssignment.shiftId === 'object' && permanentAssignment.shiftId !== null && '_id' in permanentAssignment.shiftId) {
+      shift = permanentAssignment.shiftId;
+    } else {
+      shift = await Shift.findById(permanentAssignment.shiftId);
+    }
+    if (shift) {
+      const shiftObj = (shift && typeof shift === 'object' && 'toObject' in shift && typeof shift.toObject === 'function')
+        ? shift.toObject()
+        : (typeof shift === 'object' ? shift : null);
+      if (shiftObj && '_id' in shiftObj) {
+        return {
+          shiftId: shiftObj._id,
+          shift: shiftObj,
+        };
+      }
+    }
   }
   
   // 4. Check team assignments
@@ -150,10 +204,23 @@ export async function getAssignedShift(
     }).populate('shiftId');
     
     if (teamAssignment && teamAssignment.shiftId) {
-      return {
-        shiftId: teamAssignment.shiftId._id,
-        shift: teamAssignment.shiftId,
-      };
+      let shift: any;
+      if (typeof teamAssignment.shiftId === 'object' && teamAssignment.shiftId !== null && '_id' in teamAssignment.shiftId) {
+        shift = teamAssignment.shiftId;
+      } else {
+        shift = await Shift.findById(teamAssignment.shiftId);
+      }
+      if (shift) {
+        const shiftObj = (shift && typeof shift === 'object' && 'toObject' in shift && typeof shift.toObject === 'function')
+          ? shift.toObject()
+          : (typeof shift === 'object' ? shift : null);
+        if (shiftObj && '_id' in shiftObj) {
+          return {
+            shiftId: shiftObj._id,
+            shift: shiftObj,
+          };
+        }
+      }
     }
   }
   
@@ -167,10 +234,23 @@ export async function getAssignedShift(
     }).populate('shiftId');
     
     if (deptAssignment && deptAssignment.shiftId) {
-      return {
-        shiftId: deptAssignment.shiftId._id,
-        shift: deptAssignment.shiftId,
-      };
+      let shift: any;
+      if (typeof deptAssignment.shiftId === 'object' && deptAssignment.shiftId !== null && '_id' in deptAssignment.shiftId) {
+        shift = deptAssignment.shiftId;
+      } else {
+        shift = await Shift.findById(deptAssignment.shiftId);
+      }
+      if (shift) {
+        const shiftObj = (shift && typeof shift === 'object' && 'toObject' in shift && typeof shift.toObject === 'function')
+          ? shift.toObject()
+          : (typeof shift === 'object' ? shift : null);
+        if (shiftObj && '_id' in shiftObj) {
+          return {
+            shiftId: shiftObj._id,
+            shift: shiftObj,
+          };
+        }
+      }
     }
   }
   

@@ -104,18 +104,43 @@ export async function POST(req: NextRequest) {
 
     // Check conflicts for employee assignments
     if (validatedData.assignmentScope === 'employee' && validatedData.employeeId) {
-      const checkDate = validatedData.startDate ? new Date(validatedData.startDate) : new Date();
+      // For permanent assignments, check conflicts on effectiveDate
+      // For temporary assignments, check conflicts on startDate
+      const effectiveDate = validatedData.effectiveDate 
+        ? new Date(validatedData.effectiveDate) 
+        : new Date();
+      const checkDate = validatedData.assignmentType === 'temporary' && validatedData.startDate
+        ? new Date(validatedData.startDate)
+        : effectiveDate;
+
       const conflicts = await checkShiftConflicts(
         validatedData.employeeId,
         checkDate,
         validatedData.shiftId
       );
 
-      if (conflicts.hasConflict && conflicts.conflicts.length > 0) {
-        return NextResponse.json(
-          { error: 'Shift assignment conflicts detected', conflicts: conflicts.conflicts },
-          { status: 400 }
+      // For permanent assignments, only show conflicts if they're critical (leave, roster conflicts)
+      // Don't treat existing permanent assignments as conflicts since we allow replacing them
+      if (validatedData.assignmentType === 'permanent') {
+        // Filter out conflicts related to existing assignments, keep only critical ones (leave, roster)
+        const criticalConflicts = conflicts.conflicts.filter(conflict => 
+          !conflict.toLowerCase().includes('already has a different shift assigned')
         );
+        
+        if (criticalConflicts.length > 0) {
+          return NextResponse.json(
+            { error: 'Shift assignment conflicts detected', conflicts: criticalConflicts },
+            { status: 400 }
+          );
+        }
+      } else {
+        // For temporary assignments, show all conflicts
+        if (conflicts.hasConflict && conflicts.conflicts.length > 0) {
+          return NextResponse.json(
+            { error: 'Shift assignment conflicts detected', conflicts: conflicts.conflicts },
+            { status: 400 }
+          );
+        }
       }
     }
 
