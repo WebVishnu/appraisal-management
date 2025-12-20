@@ -172,13 +172,13 @@ async function seed() {
         email: emp.email,
         role: emp.role,
         managerId: emp.manager._id,
-        isActive: true,
-      });
+      isActive: true,
+    });
 
       const user = await User.create({
         email: emp.email,
-        password: hashedPassword,
-        role: 'employee',
+      password: hashedPassword,
+      role: 'employee',
         employeeId: employee._id,
         isActive: true,
       });

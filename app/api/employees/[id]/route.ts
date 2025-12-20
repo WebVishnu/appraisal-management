@@ -14,6 +14,19 @@ import Roster from '@/lib/models/Roster';
 import Shift from '@/lib/models/Shift';
 import mongoose from 'mongoose';
 import { getAssignedShift } from '@/lib/utils/shift';
+import { z } from 'zod';
+import User from '@/lib/models/User';
+import OnboardingRequest from '@/lib/models/OnboardingRequest';
+import OnboardingSubmission from '@/lib/models/OnboardingSubmission';
+
+const updateEmployeeSchema = z.object({
+  employeeId: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  role: z.string().min(1).optional(),
+  managerId: z.string().optional().nullable(),
+  isActive: z.boolean().optional(),
+});
 
 export async function GET(
   req: NextRequest,
@@ -319,6 +332,24 @@ export async function GET(
       .select('startDate endDate leaveType')
       .sort({ startDate: 1 });
 
+    // Get onboarding submission data
+    let onboardingSubmission = null;
+    try {
+      const onboardingRequest = await OnboardingRequest.findOne({
+        employeeId: new mongoose.Types.ObjectId(employeeId),
+      });
+
+      if (onboardingRequest) {
+        const submission = await OnboardingSubmission.findOne({
+          onboardingRequestId: onboardingRequest._id,
+        }).lean();
+        onboardingSubmission = submission;
+      }
+    } catch (error) {
+      console.error('Error fetching onboarding data:', error);
+      // Continue without onboarding data if there's an error
+    }
+
     return NextResponse.json({
       employee,
       reviews: allReviews,
@@ -351,8 +382,102 @@ export async function GET(
       healthIndicators: session.user.role === 'manager' || session.user.role === 'hr' || session.user.role === 'super_admin' 
         ? healthIndicators 
         : null,
+      onboarding: onboardingSubmission,
     });
   } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT - Update employee
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session || (session.user.role !== 'hr' && session.user.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+    const validatedData = updateEmployeeSchema.parse(body);
+
+    await connectDB();
+
+    // If employeeId is being updated, check for duplicates
+    if (validatedData.employeeId) {
+      const existing = await Employee.findOne({
+        employeeId: validatedData.employeeId,
+        _id: { $ne: id },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { error: 'Employee ID already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // If email is being updated, check for duplicates
+    if (validatedData.email) {
+      const existing = await Employee.findOne({
+        email: validatedData.email.toLowerCase(),
+        _id: { $ne: id },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { error: 'Email already exists' },
+          { status: 400 }
+        );
+      }
+      validatedData.email = validatedData.email.toLowerCase();
+    }
+
+    // Validate manager if provided
+    if (validatedData.managerId !== undefined) {
+      if (validatedData.managerId) {
+        const manager = await Employee.findById(validatedData.managerId);
+        if (!manager) {
+          return NextResponse.json({ error: 'Manager not found' }, { status: 400 });
+        }
+        // Prevent circular reference (employee cannot be their own manager)
+        if (validatedData.managerId === id) {
+          return NextResponse.json({ error: 'Employee cannot be their own manager' }, { status: 400 });
+        }
+      }
+    }
+
+    const updatePayload: any = {};
+    if (validatedData.employeeId !== undefined) updatePayload.employeeId = validatedData.employeeId;
+    if (validatedData.name !== undefined) updatePayload.name = validatedData.name;
+    if (validatedData.email !== undefined) updatePayload.email = validatedData.email;
+    if (validatedData.role !== undefined) updatePayload.role = validatedData.role;
+    if (validatedData.managerId !== undefined) updatePayload.managerId = validatedData.managerId || null;
+    if (validatedData.isActive !== undefined) updatePayload.isActive = validatedData.isActive;
+
+    const employee = await Employee.findByIdAndUpdate(id, updatePayload, { new: true })
+      .populate('managerId', 'name employeeId email');
+
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // If employee is deactivated, deactivate their user account
+    if (validatedData.isActive === false) {
+      await User.updateMany({ employeeId: id }, { isActive: false });
+    } else if (validatedData.isActive === true) {
+      await User.updateMany({ employeeId: id }, { isActive: true });
+    }
+
+    return NextResponse.json(employee);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+    console.error('Error updating employee:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

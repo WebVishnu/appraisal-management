@@ -146,6 +146,7 @@ interface EmployeeDetailsData {
     calendar: any[];
   };
   healthIndicators: HealthIndicators | null;
+  onboarding: any | null;
 }
 
 interface Shift {
@@ -277,10 +278,12 @@ export default function EmployeeDetailsClient() {
         const detailsData = await response.json();
         setData(detailsData);
         setEditFormData({
+          employeeId: detailsData.employee.employeeId,
           name: detailsData.employee.name,
           email: detailsData.employee.email,
           role: detailsData.employee.role,
           managerId: detailsData.employee.managerId?._id || '',
+          isActive: detailsData.employee.isActive,
         });
       } else {
         const error = await response.json();
@@ -345,7 +348,7 @@ export default function EmployeeDetailsClient() {
     );
   }
 
-  const { employee, shift, attendance, workReports, leaves, healthIndicators } = data;
+  const { employee, shift, attendance, workReports, leaves, healthIndicators, onboarding } = data;
 
   return (
     <div className="space-y-6 p-6">
@@ -508,6 +511,9 @@ export default function EmployeeDetailsClient() {
                 <div>
                   <Label className="text-muted-foreground">Full Name</Label>
                   <p className="font-medium">{employee.name}</p>
+                  {onboarding?.personalDetails?.fullName && onboarding.personalDetails.fullName !== employee.name && (
+                    <p className="text-sm text-muted-foreground">(as per onboarding: {onboarding.personalDetails.fullName})</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-muted-foreground flex items-center gap-2">
@@ -515,13 +521,53 @@ export default function EmployeeDetailsClient() {
                     Email
                   </Label>
                   <p className="font-medium">{employee.email}</p>
+                  {onboarding?.personalDetails?.personalEmail && onboarding.personalDetails.personalEmail !== employee.email && (
+                    <p className="text-sm text-muted-foreground">Personal: {onboarding.personalDetails.personalEmail}</p>
+                  )}
                 </div>
+                {onboarding?.personalDetails?.dateOfBirth && (
+                  <div>
+                    <Label className="text-muted-foreground">Date of Birth</Label>
+                    <p className="font-medium">{formatDate(onboarding.personalDetails.dateOfBirth)}</p>
+                  </div>
+                )}
+                {onboarding?.personalDetails?.gender && (
+                  <div>
+                    <Label className="text-muted-foreground">Gender</Label>
+                    <p className="font-medium capitalize">{onboarding.personalDetails.gender}</p>
+                  </div>
+                )}
+                {onboarding?.personalDetails?.maritalStatus && (
+                  <div>
+                    <Label className="text-muted-foreground">Marital Status</Label>
+                    <p className="font-medium capitalize">{onboarding.personalDetails.maritalStatus}</p>
+                  </div>
+                )}
+                {onboarding?.personalDetails?.nationality && (
+                  <div>
+                    <Label className="text-muted-foreground">Nationality</Label>
+                    <p className="font-medium">{onboarding.personalDetails.nationality}</p>
+                  </div>
+                )}
+                {onboarding?.personalDetails?.mobileNumber && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Mobile Number
+                    </Label>
+                    <p className="font-medium">{onboarding.personalDetails.mobileNumber}</p>
+                  </div>
+                )}
                 <div>
                   <Label className="text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Date of Joining
                   </Label>
-                  <p className="font-medium">{formatDate(employee.createdAt)}</p>
+                  <p className="font-medium">
+                    {onboarding?.employmentDetails?.dateOfJoining 
+                      ? formatDate(onboarding.employmentDetails.dateOfJoining)
+                      : formatDate(employee.createdAt)}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Employment Status</Label>
@@ -547,8 +593,36 @@ export default function EmployeeDetailsClient() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Designation</Label>
-                  <p className="font-medium">{employee.role}</p>
+                  <p className="font-medium">{onboarding?.employmentDetails?.designation || employee.role}</p>
                 </div>
+                {onboarding?.employmentDetails?.employmentType && (
+                  <div>
+                    <Label className="text-muted-foreground">Employment Type</Label>
+                    <p className="font-medium capitalize">{onboarding.employmentDetails.employmentType.replace('_', ' ')}</p>
+                  </div>
+                )}
+                {onboarding?.employmentDetails?.workLocation && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Work Location
+                    </Label>
+                    <p className="font-medium">{onboarding.employmentDetails.workLocation}</p>
+                  </div>
+                )}
+                {onboarding?.employmentDetails?.probationStatus !== undefined && (
+                  <div>
+                    <Label className="text-muted-foreground">Probation Status</Label>
+                    <Badge variant={onboarding.employmentDetails.probationStatus ? 'secondary' : 'default'}>
+                      {onboarding.employmentDetails.probationStatus ? 'On Probation' : 'Confirmed'}
+                    </Badge>
+                    {onboarding.employmentDetails.probationPeriodMonths && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Period: {onboarding.employmentDetails.probationPeriodMonths} months
+                      </p>
+                    )}
+                  </div>
+                )}
                 {employee.managerId && (
                   <div>
                     <Label className="text-muted-foreground flex items-center gap-2">
@@ -573,6 +647,344 @@ export default function EmployeeDetailsClient() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Additional Onboarding Details */}
+          {onboarding && (
+            <>
+              {/* Address Details */}
+              {onboarding.addressDetails && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Address Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground font-semibold">Current Address</Label>
+                      <div className="mt-2 p-3 border rounded-lg">
+                        <p className="font-medium">{onboarding.addressDetails.currentAddress.line1}</p>
+                        {onboarding.addressDetails.currentAddress.line2 && (
+                          <p>{onboarding.addressDetails.currentAddress.line2}</p>
+                        )}
+                        <p>
+                          {onboarding.addressDetails.currentAddress.city}, {onboarding.addressDetails.currentAddress.state}
+                        </p>
+                        <p>
+                          {onboarding.addressDetails.currentAddress.pincode}, {onboarding.addressDetails.currentAddress.country}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground font-semibold">Permanent Address</Label>
+                      <div className="mt-2 p-3 border rounded-lg">
+                        <p className="font-medium">{onboarding.addressDetails.permanentAddress.line1}</p>
+                        {onboarding.addressDetails.permanentAddress.line2 && (
+                          <p>{onboarding.addressDetails.permanentAddress.line2}</p>
+                        )}
+                        <p>
+                          {onboarding.addressDetails.permanentAddress.city}, {onboarding.addressDetails.permanentAddress.state}
+                        </p>
+                        <p>
+                          {onboarding.addressDetails.permanentAddress.pincode}, {onboarding.addressDetails.permanentAddress.country}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Identity & KYC */}
+              {onboarding.identityKYC && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Identity & KYC Documents</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {onboarding.identityKYC.aadhaarNumber && (
+                      <div>
+                        <Label className="text-muted-foreground">Aadhaar Number</Label>
+                        <p className="font-medium">{onboarding.identityKYC.aadhaarNumber}</p>
+                      </div>
+                    )}
+                    {onboarding.identityKYC.panNumber && (
+                      <div>
+                        <Label className="text-muted-foreground">PAN Number</Label>
+                        <p className="font-medium">{onboarding.identityKYC.panNumber}</p>
+                      </div>
+                    )}
+                    {onboarding.identityKYC.passportNumber && (
+                      <div>
+                        <Label className="text-muted-foreground">Passport Number</Label>
+                        <p className="font-medium">{onboarding.identityKYC.passportNumber}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Compensation & Payroll */}
+              {onboarding.compensationPayroll && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Compensation & Payroll</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">Annual CTC</Label>
+                        <p className="font-medium">₹{onboarding.compensationPayroll.annualCTC?.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Basic Salary</Label>
+                        <p className="font-medium">₹{onboarding.compensationPayroll.basicSalary?.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">HRA</Label>
+                        <p className="font-medium">₹{onboarding.compensationPayroll.hra?.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Allowances</Label>
+                        <p className="font-medium">₹{onboarding.compensationPayroll.allowances?.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">Pay Frequency</Label>
+                        <p className="font-medium capitalize">{onboarding.compensationPayroll.payFrequency?.replace('_', ' ')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">PF Applicable</Label>
+                        <Badge variant={onboarding.compensationPayroll.pfApplicable ? 'default' : 'secondary'}>
+                          {onboarding.compensationPayroll.pfApplicable ? 'Yes' : 'No'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">ESI Applicable</Label>
+                        <Badge variant={onboarding.compensationPayroll.esiApplicable ? 'default' : 'secondary'}>
+                          {onboarding.compensationPayroll.esiApplicable ? 'Yes' : 'No'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground font-semibold">Bank Details</Label>
+                      <div className="mt-2 p-3 border rounded-lg grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Bank Name</p>
+                          <p className="font-medium">{onboarding.compensationPayroll.bankName}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Account Number</p>
+                          <p className="font-medium">{onboarding.compensationPayroll.accountNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">IFSC Code</p>
+                          <p className="font-medium">{onboarding.compensationPayroll.ifscCode}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Statutory & Tax */}
+              {onboarding.statutoryTax && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Statutory & Tax</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {onboarding.statutoryTax.pfUAN && (
+                      <div>
+                        <Label className="text-muted-foreground">PF UAN</Label>
+                        <p className="font-medium">{onboarding.statutoryTax.pfUAN}</p>
+                      </div>
+                    )}
+                    {onboarding.statutoryTax.esicNumber && (
+                      <div>
+                        <Label className="text-muted-foreground">ESIC Number</Label>
+                        <p className="font-medium">{onboarding.statutoryTax.esicNumber}</p>
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-muted-foreground">Professional Tax</Label>
+                      <Badge variant={onboarding.statutoryTax.professionalTaxApplicable ? 'default' : 'secondary'}>
+                        {onboarding.statutoryTax.professionalTaxApplicable ? 'Applicable' : 'Not Applicable'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Tax Regime</Label>
+                      <p className="font-medium capitalize">{onboarding.statutoryTax.incomeTaxRegime}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Education Details */}
+              {onboarding.educationDetails && onboarding.educationDetails.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Education Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {onboarding.educationDetails.map((edu: any, index: number) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Qualification</Label>
+                            <p className="font-medium">{edu.qualification}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Degree</Label>
+                            <p className="font-medium">{edu.degree}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Institution</Label>
+                            <p className="font-medium">{edu.institution}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Year of Passing</Label>
+                            <p className="font-medium">{edu.yearOfPassing}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Previous Employment */}
+              {onboarding.previousEmployment && onboarding.previousEmployment.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Previous Employment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {onboarding.previousEmployment.map((prev: any, index: number) => (
+                      <div key={index} className="p-4 border rounded-lg">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Company</Label>
+                            <p className="font-medium">{prev.companyName}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Designation</Label>
+                            <p className="font-medium">{prev.designation}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Period</Label>
+                            <p className="font-medium">
+                              {formatDate(prev.startDate)} - {formatDate(prev.endDate)}
+                            </p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Reason for Leaving</Label>
+                            <p className="font-medium">{prev.reasonForLeaving}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Emergency Contact */}
+              {onboarding.emergencyContact && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Emergency Contact</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Name</Label>
+                      <p className="font-medium">{onboarding.emergencyContact.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Relationship</Label>
+                      <p className="font-medium">{onboarding.emergencyContact.relationship}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Mobile</Label>
+                      <p className="font-medium">{onboarding.emergencyContact.mobileNumber}</p>
+                    </div>
+                    {onboarding.emergencyContact.email && (
+                      <div>
+                        <Label className="text-muted-foreground">Email</Label>
+                        <p className="font-medium">{onboarding.emergencyContact.email}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Policies & Declarations */}
+              {onboarding.policiesDeclarations && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Policies & Declarations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Offer Letter</Label>
+                      <Badge variant={onboarding.policiesDeclarations.offerLetterAccepted ? 'default' : 'secondary'}>
+                        {onboarding.policiesDeclarations.offerLetterAccepted ? 'Accepted' : 'Pending'}
+                      </Badge>
+                      {onboarding.policiesDeclarations.offerLetterAcceptedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(onboarding.policiesDeclarations.offerLetterAcceptedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">NDA</Label>
+                      <Badge variant={onboarding.policiesDeclarations.ndaSigned ? 'default' : 'secondary'}>
+                        {onboarding.policiesDeclarations.ndaSigned ? 'Signed' : 'Pending'}
+                      </Badge>
+                      {onboarding.policiesDeclarations.ndaSignedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(onboarding.policiesDeclarations.ndaSignedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Code of Conduct</Label>
+                      <Badge variant={onboarding.policiesDeclarations.codeOfConductAccepted ? 'default' : 'secondary'}>
+                        {onboarding.policiesDeclarations.codeOfConductAccepted ? 'Accepted' : 'Pending'}
+                      </Badge>
+                      {onboarding.policiesDeclarations.codeOfConductAcceptedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(onboarding.policiesDeclarations.codeOfConductAcceptedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">POSH Policy</Label>
+                      <Badge variant={onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'default' : 'secondary'}>
+                        {onboarding.policiesDeclarations.poshPolicyAcknowledged ? 'Acknowledged' : 'Pending'}
+                      </Badge>
+                      {onboarding.policiesDeclarations.poshPolicyAcknowledgedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(onboarding.policiesDeclarations.poshPolicyAcknowledgedAt)}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Data Privacy</Label>
+                      <Badge variant={onboarding.policiesDeclarations.dataPrivacyConsent ? 'default' : 'secondary'}>
+                        {onboarding.policiesDeclarations.dataPrivacyConsent ? 'Consented' : 'Pending'}
+                      </Badge>
+                      {onboarding.policiesDeclarations.dataPrivacyConsentAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(onboarding.policiesDeclarations.dataPrivacyConsentAt)}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
 
           {/* Section 8: Role-Based Action Panel */}
           <Card>
@@ -1138,6 +1550,13 @@ export default function EmployeeDetailsClient() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label>Employee ID</Label>
+              <Input
+                value={editFormData.employeeId || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, employeeId: e.target.value })}
+              />
+            </div>
+            <div>
               <Label>Name</Label>
               <Input
                 value={editFormData.name || ''}
@@ -1158,6 +1577,18 @@ export default function EmployeeDetailsClient() {
                 value={editFormData.role || ''}
                 onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={editFormData.isActive ?? true}
+                onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="isActive" className="cursor-pointer">
+                Active Employee
+              </Label>
             </div>
           </div>
           <DialogFooter>
