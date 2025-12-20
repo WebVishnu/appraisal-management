@@ -44,6 +44,7 @@ import { StatusBadge } from '@/components/shared/status-badge';
 interface OnboardingRequest {
   _id: string;
   onboardingId: string;
+  token: string;
   email: string;
   firstName: string;
   lastName: string;

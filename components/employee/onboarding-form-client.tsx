@@ -50,6 +50,7 @@ interface OnboardingRequest {
   dateOfJoining: string;
   department?: string;
   designation?: string;
+  workLocation?: string;
   reportingManagerId?: {
     _id: string;
     name: string;
@@ -236,11 +237,11 @@ export default function OnboardingFormClient() {
         stepData = {
           ...stepData,
           // Ensure all required fields are present, using request data as fallback
-          dateOfJoining: stepData.dateOfJoining || request.dateOfJoining,
-          department: stepData.department || request.department || '',
-          designation: stepData.designation || request.designation || '',
-          workLocation: stepData.workLocation || request.workLocation || '',
-          reportingManagerId: stepData.reportingManagerId || request.reportingManagerId?._id || request.reportingManagerId || null,
+          dateOfJoining: stepData.dateOfJoining || request?.dateOfJoining,
+          department: stepData.department || request?.department || '',
+          designation: stepData.designation || request?.designation || '',
+          workLocation: stepData.workLocation || request?.workLocation || '',
+          reportingManagerId: stepData.reportingManagerId || request?.reportingManagerId?._id || request?.reportingManagerId || null,
           // Preserve other fields
           employmentType: stepData.employmentType || '',
           probationStatus: stepData.probationStatus || false,
@@ -982,7 +983,7 @@ export default function OnboardingFormClient() {
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Upload your photograph (JPG/PNG, max 5MB)</p>
-                <Input type="file" disabled={isReadOnly} disabled={isReadOnly}   accept="image/jpeg,image/png" disabled={isReadOnly}  className="mt-2" disabled={isReadOnly} />
+                <Input type="file" disabled={isReadOnly} accept="image/jpeg,image/png" className="mt-2" />
               </div>
             </div>
           </div>
@@ -1331,7 +1332,7 @@ export default function OnboardingFormClient() {
                       ? typeof stepData.dateOfJoining === 'string'
                         ? stepData.dateOfJoining.split('T')[0]
                         : new Date(stepData.dateOfJoining).toISOString().split('T')[0]
-                      : request.dateOfJoining
+                      : request?.dateOfJoining
                       ? typeof request.dateOfJoining === 'string'
                         ? request.dateOfJoining.split('T')[0]
                         : new Date(request.dateOfJoining).toISOString().split('T')[0]
@@ -1374,7 +1375,7 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>Department *</Label>
                 <Input
-                  value={stepData.department || request.department || ''}
+                  value={stepData.department || request?.department || ''}
                   onChange={(e) => {
                     updateFormData('employmentDetails', {
                       ...stepData,
@@ -1388,7 +1389,7 @@ export default function OnboardingFormClient() {
               <div>
                 <Label>Designation *</Label>
                 <Input
-                  value={stepData.designation || request.designation || ''}
+                  value={stepData.designation || request?.designation || ''}
                   onChange={(e) => {
                     updateFormData('employmentDetails', {
                       ...stepData,
@@ -1403,7 +1404,7 @@ export default function OnboardingFormClient() {
             <div>
               <Label>Work Location *</Label>
               <Input
-                value={stepData.workLocation || request.workLocation || ''}
+                value={stepData.workLocation || request?.workLocation || ''}
                 onChange={(e) => {
                   updateFormData('employmentDetails', {
                     ...stepData,
@@ -1419,8 +1420,8 @@ export default function OnboardingFormClient() {
               <Input
                 value={
                   stepData.reportingManagerId
-                    ? request.reportingManagerId?.name || ''
-                    : request.reportingManagerId?.name || ''
+                    ? request?.reportingManagerId?.name || ''
+                    : request?.reportingManagerId?.name || ''
                 }
                 disabled
                 placeholder="Pre-filled from HR"
@@ -1650,7 +1651,7 @@ export default function OnboardingFormClient() {
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
                 <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Upload Bank Proof (PDF/JPG, max 5MB)</p>
-                <Input type="file" disabled={isReadOnly} disabled={isReadOnly}   accept=".pdf,.jpg,.jpeg,.png" disabled={isReadOnly}  className="mt-2" />
+                <Input type="file" disabled={isReadOnly} accept=".pdf,.jpg,.jpeg,.png" className="mt-2" />
               </div>
             </div>
           </div>
