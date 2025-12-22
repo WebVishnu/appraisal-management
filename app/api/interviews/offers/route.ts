@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if hiring manager was populated (exists in database)
-    // If populate fails, it returns the ObjectId string, not a populated object
+    // If populate fails, it returns the ObjectId, not a populated object
     const populatedHiringManager = jobRequisition.hiringManagerId as any;
     const isPopulated = populatedHiringManager && typeof populatedHiringManager === 'object' && populatedHiringManager._id;
     
@@ -192,10 +192,12 @@ export async function POST(req: NextRequest) {
           }, { status: 400 });
         }
       } else {
-        // Not populated - Employee might not exist, but we'll check below
-        hiringManagerObjectId = jobRequisition.hiringManagerId instanceof mongoose.Types.ObjectId
-          ? jobRequisition.hiringManagerId
-          : new mongoose.Types.ObjectId(jobRequisition.hiringManagerId.toString());
+        // Not populated - get the ObjectId from the field
+        // Type assertion needed because TypeScript doesn't know the type after populate
+        const hiringManagerIdValue = jobRequisition.hiringManagerId as mongoose.Types.ObjectId | string;
+        hiringManagerObjectId = hiringManagerIdValue instanceof mongoose.Types.ObjectId
+          ? hiringManagerIdValue
+          : new mongoose.Types.ObjectId(String(hiringManagerIdValue));
       }
     } catch (error) {
       console.error('Invalid hiring manager ID format:', jobRequisition.hiringManagerId);

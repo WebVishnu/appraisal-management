@@ -192,7 +192,9 @@ export default function ManagerAttendanceClient() {
           </CardContent>
         </Card>
       ) : (
-        Object.values(groupedByEmployee).map(({ employee, records }) => (
+        Object.values(groupedByEmployee).map(({ employee, records }) => {
+          if (!employee) return null;
+          return (
           <Card key={employee._id}>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">{employee.name}</CardTitle>
@@ -262,9 +264,10 @@ export default function ManagerAttendanceClient() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-        ))
+              </CardContent>
+            </Card>
+            );
+          })
       )}
     </div>
   );

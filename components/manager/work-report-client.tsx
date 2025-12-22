@@ -432,7 +432,7 @@ export default function ManagerWorkReportClient() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Review Report - {selectedReport?.employeeId.name} ({formatDate(selectedReport?.reportDate || '')})
+              Review Report - {selectedReport?.employeeId?.name || 'Employee Deleted'} ({formatDate(selectedReport?.reportDate || '')})
             </DialogTitle>
             <DialogDescription>Provide feedback and approve or return the report</DialogDescription>
           </DialogHeader>

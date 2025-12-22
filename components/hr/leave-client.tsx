@@ -449,7 +449,13 @@ export default function HRLeaveClient() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenBalanceDialog(leave.employeeId)}
+                        onClick={() => {
+                          if (!leave.employeeId) {
+                            toast.error('Cannot view balance: Employee has been deleted');
+                            return;
+                          }
+                          handleOpenBalanceDialog(leave.employeeId);
+                        }}
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Balance
@@ -527,7 +533,13 @@ export default function HRLeaveClient() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleOpenBalanceDialog(leave.employeeId)}
+                      onClick={() => {
+                        if (!leave.employeeId) {
+                          toast.error('Cannot view balance: Employee has been deleted');
+                          return;
+                        }
+                        handleOpenBalanceDialog(leave.employeeId);
+                      }}
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Manage Balance
