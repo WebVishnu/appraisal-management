@@ -5,6 +5,7 @@ import Offer from '@/lib/models/Offer';
 import Candidate from '@/lib/models/Candidate';
 import JobRequisition from '@/lib/models/JobRequisition';
 import Employee from '@/lib/models/Employee';
+import User from '@/lib/models/User';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import { generateOfferId, generateOfferToken, generateOfferLink, isOfferExpired } from '@/lib/utils/interview';
@@ -163,15 +164,105 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate job requisition
-    const jobRequisition = await JobRequisition.findById(candidate.jobRequisitionId);
+    const jobRequisition = await JobRequisition.findById(candidate.jobRequisitionId)
+      .populate('hiringManagerId', 'name email employeeId isActive');
     if (!jobRequisition) {
       return NextResponse.json({ error: 'Job requisition not found' }, { status: 400 });
     }
 
     // Validate hiring manager
-    const hiringManager = await Employee.findById(jobRequisition.hiringManagerId);
+    if (!jobRequisition.hiringManagerId) {
+      return NextResponse.json({ error: 'Job requisition does not have a hiring manager assigned' }, { status: 400 });
+    }
+
+    // Check if hiring manager was populated (exists in database)
+    // If populate fails, it returns the ObjectId string, not a populated object
+    const populatedHiringManager = jobRequisition.hiringManagerId as any;
+    const isPopulated = populatedHiringManager && typeof populatedHiringManager === 'object' && populatedHiringManager._id;
+    
+    let hiringManagerObjectId: mongoose.Types.ObjectId;
+    try {
+      // Get the ObjectId - either from populated object or from the ID itself
+      if (isPopulated) {
+        hiringManagerObjectId = populatedHiringManager._id;
+        // If populated but inactive, we know the issue
+        if (!populatedHiringManager.isActive) {
+          return NextResponse.json({ 
+            error: `Hiring manager is inactive. Employee: ${populatedHiringManager.name || 'Unknown'} (${populatedHiringManager.employeeId || 'N/A'})` 
+          }, { status: 400 });
+        }
+      } else {
+        // Not populated - Employee might not exist, but we'll check below
+        hiringManagerObjectId = jobRequisition.hiringManagerId instanceof mongoose.Types.ObjectId
+          ? jobRequisition.hiringManagerId
+          : new mongoose.Types.ObjectId(jobRequisition.hiringManagerId.toString());
+      }
+    } catch (error) {
+      console.error('Invalid hiring manager ID format:', jobRequisition.hiringManagerId);
+      return NextResponse.json({ error: 'Invalid hiring manager ID format' }, { status: 400 });
+    }
+
+    // First check if Employee exists at all (for debugging)
+    const hiringManagerCheck = await Employee.findById(hiringManagerObjectId);
+    
+    if (!hiringManagerCheck) {
+      // Check if populate returned null (Employee was deleted)
+      if (!isPopulated) {
+        console.error('Hiring manager Employee does not exist (reference in JobRequisition points to deleted Employee):', {
+          hiringManagerId: hiringManagerObjectId.toString(),
+          jobRequisitionId: jobRequisition._id.toString(),
+          candidateId: candidate._id.toString(),
+          jobRequisitionTitle: jobRequisition.jobTitle,
+        });
+        return NextResponse.json({ 
+          error: `Hiring manager Employee (ID: ${hiringManagerObjectId.toString()}) not found in database. The Employee may have been deleted. Please update the job requisition "${jobRequisition.jobTitle}" with a valid hiring manager.` 
+        }, { status: 400 });
+      }
+      
+      console.error('Hiring manager Employee does not exist:', {
+        hiringManagerId: hiringManagerObjectId.toString(),
+        jobRequisitionId: jobRequisition._id.toString(),
+        candidateId: candidate._id.toString(),
+      });
+      return NextResponse.json({ 
+        error: `Hiring manager Employee (ID: ${hiringManagerObjectId.toString()}) not found in database. Please ensure the Employee exists and is active.` 
+      }, { status: 400 });
+    }
+
+    // Now check if Employee is active
+    const hiringManager = await Employee.findOne({
+      _id: hiringManagerObjectId,
+      isActive: true,
+    });
+    
     if (!hiringManager) {
-      return NextResponse.json({ error: 'Hiring manager not found' }, { status: 400 });
+      console.error('Hiring manager found but inactive:', {
+        hiringManagerId: hiringManagerObjectId.toString(),
+        isActive: hiringManagerCheck.isActive,
+        employeeId: hiringManagerCheck.employeeId,
+        name: hiringManagerCheck.name,
+        jobRequisitionId: jobRequisition._id.toString(),
+        candidateId: candidate._id.toString(),
+      });
+      return NextResponse.json({ error: `Hiring manager is inactive. Employee: ${hiringManagerCheck.name} (${hiringManagerCheck.employeeId})` }, { status: 400 });
+    }
+
+    // Find the User associated with this Employee for approval workflow
+    const hiringManagerUser = await User.findOne({
+      employeeId: hiringManagerObjectId,
+      status: 'active',
+      $or: [
+        { lockedUntil: null },
+        { lockedUntil: { $lt: new Date() } }
+      ],
+    });
+
+    if (!hiringManagerUser) {
+      console.error('Hiring manager user account not found:', {
+        employeeId: hiringManagerObjectId.toString(),
+        hiringManagerName: hiringManager.name,
+      });
+      return NextResponse.json({ error: 'Hiring manager user account not found or inactive' }, { status: 400 });
     }
 
     // Generate offer ID and token
@@ -195,7 +286,7 @@ export async function POST(req: NextRequest) {
           status: 'approved' as const, // Creator auto-approves
         },
         {
-          approverId: hiringManager._id.toString(),
+          approverId: hiringManagerUser._id.toString(),
           approverRole: 'manager',
           status: 'pending' as const,
         },

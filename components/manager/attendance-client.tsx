@@ -17,7 +17,7 @@ interface AttendanceRecord {
     name: string;
     employeeId: string;
     email: string;
-  };
+  } | null;
   date: string;
   checkIn: string;
   checkOut?: string;
@@ -62,6 +62,7 @@ export default function ManagerAttendanceClient() {
 
   const filteredAttendance = attendance.filter((record) => {
     if (!searchTerm) return true;
+    if (!record.employeeId) return false; // Filter out records with deleted employees
     const search = searchTerm.toLowerCase();
     return (
       record.employeeId.name.toLowerCase().includes(search) ||
@@ -108,6 +109,7 @@ export default function ManagerAttendanceClient() {
 
   // Group attendance by employee
   const groupedByEmployee = filteredAttendance.reduce((acc, record) => {
+    if (!record.employeeId) return acc; // Skip records with deleted employees
     const empId = record.employeeId._id;
     if (!acc[empId]) {
       acc[empId] = {

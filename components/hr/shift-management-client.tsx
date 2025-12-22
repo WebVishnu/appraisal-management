@@ -71,7 +71,7 @@ interface ShiftAssignment {
     _id: string;
     name: string;
     employeeId: string;
-  };
+  } | null;
   teamManagerId?: {
     _id: string;
     name: string;
@@ -719,7 +719,7 @@ export default function HRShiftManagementClient() {
                           <h3 className="font-medium">{assignment.shiftId.name}</h3>
                           <p className="text-sm text-muted-foreground">
                             {assignment.assignmentScope === 'employee' && assignment.employeeId && (
-                              <>Employee: {assignment.employeeId.name} ({assignment.employeeId.employeeId})</>
+                              <>Employee: {assignment.employeeId?.name || 'Employee Deleted'} ({assignment.employeeId?.employeeId || 'N/A'})</>
                             )}
                             {assignment.assignmentScope === 'team' && assignment.teamManagerId && (
                               <>Team: {assignment.teamManagerId.name}'s Team</>

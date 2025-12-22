@@ -34,7 +34,7 @@ interface AttendanceRecord {
     name: string;
     employeeId: string;
     email: string;
-  };
+  } | null;
   date: string;
   checkIn: string;
   checkOut?: string;
@@ -130,6 +130,10 @@ export default function HRAttendanceClient() {
   }, [startDate, endDate, selectedEmployee]);
 
   const handleEdit = (record: AttendanceRecord) => {
+    if (!record.employeeId) {
+      toast.error('Cannot edit attendance record: Employee has been deleted');
+      return;
+    }
     setEditingRecord(record);
     setFormData({
       employeeId: record.employeeId._id,
@@ -210,6 +214,7 @@ export default function HRAttendanceClient() {
 
   const filteredAttendance = attendance.filter((record) => {
     if (!searchTerm) return true;
+    if (!record.employeeId) return false; // Filter out records with deleted employees
     const search = searchTerm.toLowerCase();
     return (
       record.employeeId.name.toLowerCase().includes(search) ||
@@ -388,9 +393,11 @@ export default function HRAttendanceClient() {
                     >
                       <td className="py-2 sm:py-3 px-2 sm:px-4">
                         <div>
-                          <div className="font-medium text-xs sm:text-sm">{record.employeeId.name}</div>
+                          <div className="font-medium text-xs sm:text-sm">
+                            {record.employeeId?.name || 'Employee Deleted'}
+                          </div>
                           <div className="text-xs text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
-                            {record.employeeId.employeeId}
+                            {record.employeeId?.employeeId || 'N/A'}
                           </div>
                         </div>
                       </td>

@@ -69,7 +69,7 @@ interface Payroll {
     name: string;
     employeeId: string;
     email: string;
-  };
+  } | null;
   payrollMonth: number;
   payrollYear: number;
   grossMonthlySalary: number;
@@ -625,9 +625,9 @@ export default function PayrollManagementClient() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle>{payroll.employeeId.name}</CardTitle>
+                        <CardTitle>{payroll.employeeId?.name || 'Employee Deleted'}</CardTitle>
                         <CardDescription>
-                          {payroll.employeeId.employeeId} • {getMonthName(payroll.payrollMonth)} {payroll.payrollYear}
+                          {payroll.employeeId?.employeeId || 'N/A'} • {getMonthName(payroll.payrollMonth)} {payroll.payrollYear}
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-2">

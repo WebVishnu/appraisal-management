@@ -68,7 +68,7 @@ interface Report {
     name: string;
     employeeId: string;
     email: string;
-  };
+  } | null;
   managerId: {
     _id?: string;
     name?: string;
@@ -196,8 +196,8 @@ export default function ReportsClient() {
     const headers = ['Cycle', 'Employee', 'Email', 'Manager', 'Manager Email', 'Final Rating', 'Status', 'Submitted'];
     const rows = reports.map((report) => [
       report.cycleId.name,
-      report.employeeId.name,
-      report.employeeId.email,
+      report.employeeId?.name || 'Employee Deleted',
+      report.employeeId?.email || 'N/A',
       report.managerId?.name || 'N/A',
       report.managerId?.email || 'N/A',
       report.finalRating || 'Pending',
@@ -392,8 +392,8 @@ export default function ReportsClient() {
                     <TableCell>{report.cycleId.name}</TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{report.employeeId.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{report.employeeId.email}</div>
+                        <div className="font-medium">{report.employeeId?.name || 'Employee Deleted'}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{report.employeeId?.email || 'N/A'}</div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -538,8 +538,8 @@ export default function ReportsClient() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-500">Employee</Label>
-                <p className="font-medium">{selectedReport.employeeId.name}</p>
-                <p className="text-sm text-gray-500">{selectedReport.employeeId.email}</p>
+                <p className="font-medium">{selectedReport.employeeId?.name || 'Employee Deleted'}</p>
+                <p className="text-sm text-gray-500">{selectedReport.employeeId?.email || 'N/A'}</p>
               </div>
               {selectedReport.managerId && selectedReport.managerId.name ? (
                 <div>

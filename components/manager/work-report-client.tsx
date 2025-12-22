@@ -44,7 +44,7 @@ interface WorkReport {
     _id: string;
     name: string;
     employeeId: string;
-  };
+  } | null;
   reportDate: string;
   status: 'draft' | 'submitted' | 'approved' | 'returned';
   tasks: WorkReportTask[];
@@ -120,6 +120,7 @@ export default function ManagerWorkReportClient() {
         const employeeMap = new Map<string, TeamOverview>();
         
         data.forEach((report: WorkReport) => {
+          if (!report.employeeId) return; // Skip reports with deleted employees
           const empId = report.employeeId._id;
           if (!employeeMap.has(empId)) {
             employeeMap.set(empId, {
@@ -237,6 +238,7 @@ export default function ManagerWorkReportClient() {
 
   const filteredReports = reports.filter((report) => {
     if (!searchTerm) return true;
+    if (!report.employeeId) return false; // Filter out reports with deleted employees
     const search = searchTerm.toLowerCase();
     return (
       report.employeeId.name.toLowerCase().includes(search) ||
@@ -377,8 +379,8 @@ export default function ManagerWorkReportClient() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-medium">{report.employeeId.name}</h3>
-                      <span className="text-sm text-muted-foreground">({report.employeeId.employeeId})</span>
+                      <h3 className="font-medium">{report.employeeId?.name || 'Employee Deleted'}</h3>
+                      <span className="text-sm text-muted-foreground">({report.employeeId?.employeeId || 'N/A'})</span>
                       <span className={`px-2 py-1 text-xs rounded ${
                         report.status === 'approved' ? 'bg-green-100 text-green-800' :
                         report.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :

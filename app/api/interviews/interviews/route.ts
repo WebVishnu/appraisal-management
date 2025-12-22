@@ -158,12 +158,35 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate interviewers
+    // Convert string IDs to ObjectIds and filter by actual database fields (isActive is virtual)
+    const interviewerObjectIds = validatedData.interviewers.map(id => {
+      try {
+        return new mongoose.Types.ObjectId(id);
+      } catch (error) {
+        return null;
+      }
+    }).filter(id => id !== null) as mongoose.Types.ObjectId[];
+
+    if (interviewerObjectIds.length !== validatedData.interviewers.length) {
+      return NextResponse.json({ error: 'Invalid interviewer ID format' }, { status: 400 });
+    }
+
     const interviewers = await User.find({
-      _id: { $in: validatedData.interviewers },
-      isActive: true,
+      _id: { $in: interviewerObjectIds },
+      status: 'active',
+      $or: [
+        { lockedUntil: null },
+        { lockedUntil: { $lt: new Date() } }
+      ],
     });
     if (interviewers.length !== validatedData.interviewers.length) {
-      return NextResponse.json({ error: 'One or more interviewers not found' }, { status: 400 });
+      console.error('Interviewer validation failed:', {
+        requested: validatedData.interviewers,
+        found: interviewers.map(i => i._id.toString()),
+        requestedCount: validatedData.interviewers.length,
+        foundCount: interviewers.length
+      });
+      return NextResponse.json({ error: 'One or more interviewers not found or not active' }, { status: 400 });
     }
 
     // Validate primary interviewer is in interviewers list
@@ -175,9 +198,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate primary interviewer exists
-    const primaryInterviewer = await User.findById(validatedData.primaryInterviewerId);
-    if (!primaryInterviewer || !primaryInterviewer.isActive) {
-      return NextResponse.json({ error: 'Primary interviewer not found' }, { status: 400 });
+    let primaryInterviewerObjectId: mongoose.Types.ObjectId;
+    try {
+      primaryInterviewerObjectId = new mongoose.Types.ObjectId(validatedData.primaryInterviewerId);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid primary interviewer ID format' }, { status: 400 });
+    }
+
+    const primaryInterviewer = await User.findOne({
+      _id: primaryInterviewerObjectId,
+      status: 'active',
+      $or: [
+        { lockedUntil: null },
+        { lockedUntil: { $lt: new Date() } }
+      ],
+    });
+    if (!primaryInterviewer) {
+      return NextResponse.json({ error: 'Primary interviewer not found or not active' }, { status: 400 });
     }
 
     // Check for scheduling conflicts

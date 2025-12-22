@@ -34,7 +34,7 @@ interface Leave {
     name: string;
     employeeId: string;
     email: string;
-  };
+  } | null;
   leaveType: string;
   startDate: string;
   endDate: string;
@@ -130,6 +130,7 @@ export default function ManagerLeaveClient() {
 
   const filteredLeaves = leaves.filter((leave) => {
     if (!searchTerm) return true;
+    if (!leave.employeeId) return false; // Filter out records with deleted employees
     const search = searchTerm.toLowerCase();
     return (
       leave.employeeId.name.toLowerCase().includes(search) ||
@@ -230,10 +231,10 @@ export default function ManagerLeaveClient() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
-                          {leave.employeeId.name}
+                          {leave.employeeId?.name || 'Employee Deleted'}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
-                          ({leave.employeeId.employeeId})
+                          ({leave.employeeId?.employeeId || 'N/A'})
                         </span>
                         <span className="font-medium text-gray-900 dark:text-[hsl(var(--foreground))] capitalize">
                           {leave.leaveType} Leave
@@ -303,10 +304,10 @@ export default function ManagerLeaveClient() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900 dark:text-[hsl(var(--foreground))]">
-                          {leave.employeeId.name}
+                          {leave.employeeId?.name || 'Employee Deleted'}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-[hsl(var(--muted-foreground))]">
-                          ({leave.employeeId.employeeId})
+                          ({leave.employeeId?.employeeId || 'N/A'})
                         </span>
                         <span className="font-medium text-gray-900 dark:text-[hsl(var(--foreground))] capitalize">
                           {leave.leaveType} Leave
@@ -365,7 +366,7 @@ export default function ManagerLeaveClient() {
             <div className="py-4">
               <div className="mb-4 p-3 bg-gray-50 dark:bg-[hsl(var(--muted))] rounded-lg">
                 <div className="text-sm">
-                  <div className="font-semibold">{selectedLeave.employeeId.name}</div>
+                  <div className="font-semibold">{selectedLeave.employeeId?.name || 'Employee Deleted'}</div>
                   <div className="text-gray-600 dark:text-[hsl(var(--muted-foreground))]">
                     {formatDate(selectedLeave.startDate)} - {formatDate(selectedLeave.endDate)} (
                     {selectedLeave.numberOfDays} days)
