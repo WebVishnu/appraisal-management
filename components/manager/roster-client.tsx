@@ -278,6 +278,7 @@ export default function ManagerRosterClient() {
                           <p className="text-xs text-muted-foreground">
                             {entry.shiftId.startTime} - {entry.shiftId.endTime}
                           </p>
+                          {/* Break info will be shown here when viewing attendance */}
                         </div>
                       )}
                     </div>

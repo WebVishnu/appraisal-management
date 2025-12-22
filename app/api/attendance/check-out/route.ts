@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../auth/[...nextauth]/route';
+import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
@@ -9,10 +10,11 @@ import {
 } from '@/lib/utils/attendance';
 import { isEarlyCheckOut, calculateWorkingHours } from '@/lib/utils/shift';
 import Shift from '@/lib/models/Shift';
+import { breakService } from '@/lib/services/break-service';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -109,11 +111,27 @@ export async function POST(req: NextRequest) {
       status = 'absent';
     }
 
+    // Auto-end any active breaks before check-out
+    await breakService.autoEndBreakOnCheckout(attendance._id);
+
     // Update attendance record
     attendance.checkOut = now;
     attendance.workingHours = workingHours;
     attendance.isEarlyExit = earlyExit;
     attendance.status = status;
+    
+    // Recalculate working hours considering breaks
+    await breakService.updateAttendanceBreakTotals(attendance._id);
+    
+    // Refresh attendance to get updated break totals
+    await attendance.populate('breaks');
+    const updatedAttendance = await Attendance.findById(attendance._id);
+    
+    // Use net working hours if available, otherwise use calculated hours
+    if (updatedAttendance?.netWorkingHours !== null && updatedAttendance?.netWorkingHours !== undefined) {
+      attendance.workingHours = updatedAttendance.netWorkingHours;
+    }
+    
     await attendance.save();
 
     return NextResponse.json({

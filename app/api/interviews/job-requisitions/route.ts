@@ -5,7 +5,7 @@ import JobRequisition from '@/lib/models/JobRequisition';
 import Employee from '@/lib/models/Employee';
 import { z } from 'zod';
 import mongoose from 'mongoose';
-import { generateJobRequisitionId } from '@/lib/utils/interview';
+import { generateJobRequisitionId, generatePublicJobToken } from '@/lib/utils/interview';
 import InterviewAuditLog from '@/lib/models/InterviewAuditLog';
 
 const evaluationCriterionSchema = z.object({
@@ -54,6 +54,9 @@ const createJobRequisitionSchema = z.object({
 
 const updateJobRequisitionSchema = createJobRequisitionSchema.partial().extend({
   status: z.enum(['open', 'on_hold', 'closed', 'cancelled']).optional(),
+  generatePublicToken: z.boolean().optional(),
+  allowPublicApplications: z.boolean().optional(),
+  publicApplicationDeadline: z.string().optional(),
 });
 
 // GET - List all job requisitions
@@ -95,6 +98,7 @@ export async function GET(req: NextRequest) {
       .populate('hiringManagerId', 'name email employeeId')
       .populate('recruiterId', 'email')
       .populate('createdBy', 'email')
+      .select('+publicToken') // Include publicToken field
       .sort({ createdAt: -1 });
 
     return NextResponse.json(jobRequisitions);
@@ -277,14 +281,37 @@ export async function PUT(req: NextRequest) {
     if (validatedData.expectedStartDate) jobRequisition.expectedStartDate = new Date(validatedData.expectedStartDate);
     if (validatedData.salaryRange) jobRequisition.salaryRange = validatedData.salaryRange;
 
+    // Handle public token generation
+    if (validatedData.generatePublicToken === true && !jobRequisition.publicToken) {
+      jobRequisition.publicToken = generatePublicJobToken();
+      jobRequisition.allowPublicApplications = true;
+    }
+
+    // Update public application settings
+    if (validatedData.allowPublicApplications !== undefined) {
+      jobRequisition.allowPublicApplications = validatedData.allowPublicApplications;
+      // If disabling, don't remove token (just disable)
+    }
+
+    if (validatedData.publicApplicationDeadline) {
+      jobRequisition.publicApplicationDeadline = new Date(validatedData.publicApplicationDeadline);
+    }
+
     await jobRequisition.save();
 
     const populated = await JobRequisition.findById(jobRequisition._id)
+      .select('+publicToken') // Include publicToken field (excluded by default)
       .populate('hiringManagerId', 'name email employeeId')
       .populate('recruiterId', 'email')
       .populate('createdBy', 'email');
 
-    return NextResponse.json(populated);
+    // Explicitly ensure publicToken is in the response object
+    const responseData = populated?.toObject ? populated.toObject() : populated;
+    if (responseData && jobRequisition.publicToken) {
+      responseData.publicToken = jobRequisition.publicToken;
+    }
+
+    return NextResponse.json(responseData);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

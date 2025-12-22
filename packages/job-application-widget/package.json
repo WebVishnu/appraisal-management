@@ -1,0 +1,21 @@
+{
+  "name": "@hrms/job-application-widget",
+  "version": "1.0.0",
+  "description": "Embeddable job application widget for HRMS",
+  "main": "src/widget.js",
+  "scripts": {
+    "build": "echo 'Widget ready for distribution'"
+  },
+  "keywords": [
+    "hrms",
+    "job-application",
+    "widget",
+    "embed"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "src/*"
+  ]
+}
+

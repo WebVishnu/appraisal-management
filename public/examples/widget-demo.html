@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRMS Job Application Widget Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #111827;
+        }
+        .header p {
+            color: #6b7280;
+            margin: 0;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .instructions h2 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #111827;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+            color: #4b5563;
+        }
+        .instructions code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .widget-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .note strong {
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>HRMS Job Application Widget Demo</h1>
+        <p>This page demonstrates how to embed the HRMS job application widget on your website</p>
+    </div>
+
+    <div class="instructions">
+        <h2>📋 How to Get Your Public Token</h2>
+        <ol>
+            <li><strong>Log in to your HRMS Dashboard</strong> as an HR or Super Admin user</li>
+            <li><strong>Navigate to:</strong> HR Dashboard → Hiring Pipeline → Job Requisitions</li>
+            <li><strong>Find the job requisition</strong> you want to create a public application link for</li>
+            <li><strong>Click the link icon (🔗)</strong> in the Actions column of that job requisition row</li>
+            <li><strong>In the dialog that opens:</strong>
+                <ul style="margin-top: 8px; padding-left: 25px;">
+                    <li>If no token exists, one will be generated automatically</li>
+                    <li>You'll see the "Public Token" field - copy this token</li>
+                    <li>You can also copy the "Public Application Link" directly</li>
+                </ul>
+            </li>
+            <li><strong>Paste the token</strong> into the widget container below (or use it in the URL as <code>?token=YOUR_TOKEN</code>)</li>
+        </ol>
+    </div>
+
+    <div class="note">
+        <strong>💡 Quick Tip:</strong> You can also add the token as a URL parameter like this: 
+        <code>/examples/widget-demo.html?token=YOUR_TOKEN</code> and the widget will automatically use it!
+    </div>
+
+    <!-- Widget Container -->
+    <div class="widget-container">
+        <div id="job-application-widget" 
+             data-hrms-job-widget 
+             data-job-token="3e0e50f656221fc8f83658539039a4260b85f3051729a5e40133903d6b90dead"
+             data-api-url="/api/public/jobs">
+        </div>
+    </div>
+
+    <!-- Include Widget CSS -->
+    <link rel="stylesheet" href="/widget/hrms-widget.css">
+    
+    <!-- Include Widget JavaScript (must be after container) -->
+    <script src="/widget/hrms-widget.js"></script>
+ 
+    <script>
+        (function() {
+            // Get token from URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            
+            if (tokenFromUrl) {
+                // Update the widget element with the token from URL
+                const widgetElement = document.getElementById('job-application-widget');
+                if (widgetElement) {
+                    widgetElement.setAttribute('data-job-token', tokenFromUrl);
+                    console.log('Token loaded from URL:', tokenFromUrl);
+                }
+            } else {
+                console.log('No token in URL. Please add ?token=YOUR_TOKEN to the URL or update the data-job-token attribute.');
+            }
+        })();
+    </script>
+
+    <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0;">💻 Embed Code</h2>
+        <p>Copy and paste this code into your website HTML:</p>
+        <pre style="background: #f3f4f6; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 12px;"><code>&lt;!-- Widget Container --&gt;
+&lt;div id="job-application-widget" 
+     data-hrms-job-widget 
+     data-job-token="YOUR_JOB_PUBLIC_TOKEN"
+     data-api-url="/api/public/jobs"&gt;
+&lt;/div&gt;
+
+&lt;!-- Include CSS --&gt;
+&lt;link rel="stylesheet" href="/widget/hrms-widget.css"&gt;
+
+&lt;!-- Include JavaScript --&gt;
+&lt;script src="/widget/hrms-widget.js"&gt;&lt;/script&gt;</code></pre>
+    </div>
+    
+</body>
+</html>
+

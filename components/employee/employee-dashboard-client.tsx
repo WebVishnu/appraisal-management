@@ -30,6 +30,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatDate } from '@/lib/utils/format';
+import MobileAppDownloadCard from './mobile-app-download-card';
 
 interface EmployeeDashboardStats {
   overview: {
@@ -318,6 +319,9 @@ export default function EmployeeDashboardClient() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Mobile App Download */}
+      <MobileAppDownloadCard />
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

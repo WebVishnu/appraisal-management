@@ -34,9 +34,13 @@ import {
   CheckCircle,
   XCircle,
   Briefcase,
+  Coffee,
+  Settings,
+  BarChart3,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/format';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
+import BreakPoliciesTab from './break-policies-tab';
 
 interface Shift {
   _id: string;
@@ -86,6 +90,32 @@ interface Employee {
   employeeId: string;
   email: string;
   isActive: boolean;
+}
+
+interface BreakPolicy {
+  _id: string;
+  name: string;
+  description?: string;
+  scope: 'global' | 'department' | 'role' | 'shift' | 'employee';
+  scopeIds: string[];
+  allowBreaks: boolean;
+  maxBreaksPerDay?: number;
+  maxTotalBreakDuration?: number;
+  maxDurationPerBreak?: number;
+  allowedBreakTypes: string[];
+  mandatoryBreaks: string[];
+  minWorkingHoursBeforeFirstBreak?: number;
+  gracePeriod?: number;
+  paidBreaks: string[];
+  deductBreakTime: boolean;
+  autoFlagExcessiveBreaks: boolean;
+  allowBreakOverrun: boolean;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  isActive: boolean;
+  createdBy?: {
+    email: string;
+  };
 }
 
 export default function HRShiftManagementClient() {
@@ -139,11 +169,62 @@ export default function HRShiftManagementClient() {
     notes: '',
   });
 
+  // Break Policies state
+  const [breakPolicies, setBreakPolicies] = useState<BreakPolicy[]>([]);
+  const [breakPolicyDialogOpen, setBreakPolicyDialogOpen] = useState(false);
+  const [editingBreakPolicy, setEditingBreakPolicy] = useState<BreakPolicy | null>(null);
+  const [breakPolicyFormData, setBreakPolicyFormData] = useState<{
+    name: string;
+    description: string;
+    scope: 'global' | 'department' | 'role' | 'shift' | 'employee';
+    scopeIds: string[];
+    allowBreaks: boolean;
+    maxBreaksPerDay?: number;
+    maxTotalBreakDuration?: number;
+    maxDurationPerBreak?: number;
+    allowedBreakTypes: string[];
+    mandatoryBreaks: string[];
+    minWorkingHoursBeforeFirstBreak?: number;
+    gracePeriod?: number;
+    paidBreaks: string[];
+    deductBreakTime: boolean;
+    autoFlagExcessiveBreaks: boolean;
+    allowBreakOverrun: boolean;
+    effectiveFrom: string;
+    effectiveTo?: string;
+    isActive: boolean;
+  }>({
+    name: '',
+    description: '',
+    scope: 'global',
+    scopeIds: [],
+    allowBreaks: true,
+    maxBreaksPerDay: 3,
+    maxTotalBreakDuration: 60,
+    maxDurationPerBreak: 30,
+    allowedBreakTypes: ['lunch', 'tea', 'personal'],
+    mandatoryBreaks: [],
+    minWorkingHoursBeforeFirstBreak: 2,
+    gracePeriod: 5,
+    paidBreaks: ['lunch'],
+    deductBreakTime: true,
+    autoFlagExcessiveBreaks: true,
+    allowBreakOverrun: false,
+    effectiveFrom: new Date().toISOString().split('T')[0],
+    effectiveTo: '',
+    isActive: true,
+  });
+  const [breakAnalytics, setBreakAnalytics] = useState<any>(null);
+
   useEffect(() => {
     fetchShifts();
     fetchAssignments();
     fetchEmployees();
-  }, []);
+    if (activeTab === 'break-policies') {
+      fetchBreakPolicies();
+      fetchBreakAnalytics();
+    }
+  }, [activeTab]);
 
   const fetchShifts = async () => {
     try {
@@ -341,6 +422,153 @@ export default function HRShiftManagementClient() {
     });
   };
 
+  const fetchBreakPolicies = async () => {
+    try {
+      const response = await fetch('/api/breaks/policies?isActive=true');
+      if (response.ok) {
+        const data = await response.json();
+        setBreakPolicies(data);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch break policies');
+    }
+  };
+
+  const fetchBreakAnalytics = async () => {
+    try {
+      const today = new Date();
+      const startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const response = await fetch(
+        `/api/breaks/analytics?startDate=${startDate.toISOString().split('T')[0]}&endDate=${today.toISOString().split('T')[0]}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setBreakAnalytics(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch break analytics:', error);
+    }
+  };
+
+  const handleCreateBreakPolicy = async () => {
+    try {
+      const response = await fetch('/api/breaks/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(breakPolicyFormData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Break policy created successfully');
+        setBreakPolicyDialogOpen(false);
+        resetBreakPolicyForm();
+        fetchBreakPolicies();
+      } else {
+        toast.error(data.error || 'Failed to create break policy');
+      }
+    } catch (error) {
+      toast.error('Failed to create break policy');
+    }
+  };
+
+  const handleUpdateBreakPolicy = async () => {
+    if (!editingBreakPolicy) return;
+
+    try {
+      const response = await fetch(`/api/breaks/policies/${editingBreakPolicy._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(breakPolicyFormData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Break policy updated successfully');
+        setBreakPolicyDialogOpen(false);
+        setEditingBreakPolicy(null);
+        resetBreakPolicyForm();
+        fetchBreakPolicies();
+      } else {
+        toast.error(data.error || 'Failed to update break policy');
+      }
+    } catch (error) {
+      toast.error('Failed to update break policy');
+    }
+  };
+
+  const handleDeleteBreakPolicy = async (policyId: string) => {
+    if (!confirm('Are you sure you want to deactivate this break policy?')) return;
+
+    try {
+      const response = await fetch(`/api/breaks/policies/${policyId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Break policy deactivated successfully');
+        fetchBreakPolicies();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to deactivate break policy');
+      }
+    } catch (error) {
+      toast.error('Failed to deactivate break policy');
+    }
+  };
+
+  const resetBreakPolicyForm = () => {
+    setBreakPolicyFormData({
+      name: '',
+      description: '',
+      scope: 'global',
+      scopeIds: [],
+      allowBreaks: true,
+      maxBreaksPerDay: 3,
+      maxTotalBreakDuration: 60,
+      maxDurationPerBreak: 30,
+      allowedBreakTypes: ['lunch', 'tea', 'personal'],
+      mandatoryBreaks: [],
+      minWorkingHoursBeforeFirstBreak: 2,
+      gracePeriod: 5,
+      paidBreaks: ['lunch'],
+      deductBreakTime: true,
+      autoFlagExcessiveBreaks: true,
+      allowBreakOverrun: false,
+      effectiveFrom: new Date().toISOString().split('T')[0],
+      effectiveTo: '',
+      isActive: true,
+    });
+  };
+
+  const openEditBreakPolicy = (policy: BreakPolicy) => {
+    setEditingBreakPolicy(policy);
+    setBreakPolicyFormData({
+      name: policy.name,
+      description: policy.description || '',
+      scope: policy.scope,
+      scopeIds: policy.scopeIds.map((id: any) => id.toString()),
+      allowBreaks: policy.allowBreaks,
+      maxBreaksPerDay: policy.maxBreaksPerDay,
+      maxTotalBreakDuration: policy.maxTotalBreakDuration,
+      maxDurationPerBreak: policy.maxDurationPerBreak,
+      allowedBreakTypes: policy.allowedBreakTypes,
+      mandatoryBreaks: policy.mandatoryBreaks,
+      minWorkingHoursBeforeFirstBreak: policy.minWorkingHoursBeforeFirstBreak,
+      gracePeriod: policy.gracePeriod,
+      paidBreaks: policy.paidBreaks,
+      deductBreakTime: policy.deductBreakTime,
+      autoFlagExcessiveBreaks: policy.autoFlagExcessiveBreaks,
+      allowBreakOverrun: policy.allowBreakOverrun,
+      effectiveFrom: new Date(policy.effectiveFrom).toISOString().split('T')[0],
+      effectiveTo: policy.effectiveTo ? new Date(policy.effectiveTo).toISOString().split('T')[0] : '',
+      isActive: policy.isActive,
+    });
+    setBreakPolicyDialogOpen(true);
+  };
+
   const openEditShift = (shift: Shift) => {
     setEditingShift(shift);
     setShiftFormData({
@@ -375,7 +603,7 @@ export default function HRShiftManagementClient() {
 
       <div className="space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 gap-1 bg-transparent p-0 h-auto border-b-2 border-border">
+          <TabsList className="grid w-full grid-cols-4 gap-1 bg-transparent p-0 h-auto border-b-2 border-border">
             <TabsTrigger 
               value="shifts"
               className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none"
@@ -393,6 +621,12 @@ export default function HRShiftManagementClient() {
               className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none"
             >
               Roster
+            </TabsTrigger>
+            <TabsTrigger 
+              value="break-policies"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none"
+            >
+              Break Policies
             </TabsTrigger>
           </TabsList>
 
@@ -540,6 +774,11 @@ export default function HRShiftManagementClient() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Break Policies Tab */}
+          <TabsContent value="break-policies" className="mt-4">
+            <BreakPoliciesTab shifts={shifts} />
           </TabsContent>
         </Tabs>
       </div>

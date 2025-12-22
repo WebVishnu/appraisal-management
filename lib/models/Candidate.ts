@@ -282,7 +282,7 @@ const CandidateSchema = new Schema<ICandidate>(
 CandidateSchema.index({ status: 1, appliedAt: -1 });
 CandidateSchema.index({ jobRequisitionId: 1, status: 1 });
 CandidateSchema.index({ assignedRecruiterId: 1, status: 1 });
-CandidateSchema.index({ email: 1 }); // Already indexed above
+// Note: email index is already created by index: true in field definition
 
 // Compound index for recruiter dashboard
 CandidateSchema.index({ assignedRecruiterId: 1, status: 1, lastActivityAt: -1 });

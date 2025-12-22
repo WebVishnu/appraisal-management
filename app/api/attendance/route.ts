@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../auth/[...nextauth]/route';
+import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
@@ -9,7 +10,7 @@ import mongoose from 'mongoose';
 // GET - Get attendance records based on role
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
 // PUT - Manual correction by HR/Admin
 export async function PUT(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -160,7 +161,7 @@ export async function PUT(req: NextRequest) {
 // POST - Create manual attendance record (HR/Admin only)
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

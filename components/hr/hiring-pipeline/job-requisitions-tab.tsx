@@ -33,6 +33,9 @@ import {
   Users,
   Calendar,
   DollarSign,
+  Copy,
+  Link as LinkIcon,
+  ExternalLink,
 } from 'lucide-react';
 import { formatDate, formatErrorMessage } from '@/lib/utils/format';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
@@ -55,6 +58,8 @@ interface JobRequisition {
   status: 'open' | 'on_hold' | 'closed' | 'cancelled';
   numberOfPositions: number;
   positionsFilled: number;
+  publicToken?: string;
+  allowPublicApplications?: boolean;
   hiringManagerId?: {
     _id: string;
     name: string;
@@ -73,6 +78,7 @@ export default function JobRequisitionsTab() {
   const [requisitions, setRequisitions] = useState<JobRequisition[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPublicLinkDialogOpen, setIsPublicLinkDialogOpen] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState<JobRequisition | null>(null);
   const [managers, setManagers] = useState<Array<{ _id: string; name: string; employeeId: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,13 +210,37 @@ export default function JobRequisitionsTab() {
     if (!selectedRequisition) return;
 
     try {
+      // Build update payload - prioritize status from selectedRequisition
+      const updatePayload: any = {
+        id: selectedRequisition._id,
+      };
+
+      // Always include status if selectedRequisition has it (this is the main use case)
+      if (selectedRequisition.status) {
+        updatePayload.status = selectedRequisition.status;
+      }
+
+      // Only include form fields that have non-empty values (for other edits)
+      if (formData.jobTitle && formData.jobTitle.trim()) updatePayload.jobTitle = formData.jobTitle;
+      if (formData.department && formData.department.trim()) updatePayload.department = formData.department;
+      if (formData.location && formData.location.trim()) updatePayload.location = formData.location;
+      if (formData.employmentType) updatePayload.employmentType = formData.employmentType;
+      if (formData.description && formData.description.trim()) updatePayload.description = formData.description;
+      if (formData.requirements && formData.requirements.trim()) updatePayload.requirements = formData.requirements;
+      if (formData.responsibilities && formData.responsibilities.trim()) updatePayload.responsibilities = formData.responsibilities;
+      if (formData.requiredSkills && formData.requiredSkills.length > 0) updatePayload.requiredSkills = formData.requiredSkills;
+      // preferredSkills not in formData, skip if not present
+      if (formData.experienceRange && (formData.experienceRange.min > 0 || formData.experienceRange.max > 0)) {
+        updatePayload.experienceRange = formData.experienceRange;
+      }
+      if (formData.hiringManagerId && formData.hiringManagerId.trim()) updatePayload.hiringManagerId = formData.hiringManagerId;
+      if (formData.numberOfPositions && formData.numberOfPositions > 0) updatePayload.numberOfPositions = formData.numberOfPositions;
+      if (formData.interviewRounds && formData.interviewRounds.length > 0) updatePayload.interviewRounds = formData.interviewRounds;
+
       const response = await fetch('/api/interviews/job-requisitions', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedRequisition._id,
-          ...formData,
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       const data = await response.json();
@@ -227,6 +257,83 @@ export default function JobRequisitionsTab() {
       console.error('Error updating requisition:', error);
       toast.error(formatErrorMessage(error, 'Failed to update job requisition'));
     }
+  };
+
+  const handleGeneratePublicToken = async (requisition: JobRequisition) => {
+    try {
+      // Set selected requisition first to show loading state
+      setSelectedRequisition(requisition);
+      setIsPublicLinkDialogOpen(true);
+
+      const response = await fetch('/api/interviews/job-requisitions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: requisition._id,
+          generatePublicToken: true,
+          allowPublicApplications: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data) {
+        console.log('Public token generated, response data:', data);
+        if (data.publicToken) {
+          toast.success('Public link generated successfully');
+          // Update the requisition in the list
+          setRequisitions(prev => prev.map(req => 
+            req._id === requisition._id ? { ...req, publicToken: data.publicToken, allowPublicApplications: data.allowPublicApplications } : req
+          ));
+          // Update the selected requisition with the token (use data directly as it has all fields)
+          setSelectedRequisition(data);
+        } else {
+          console.error('Token not in response:', data);
+          toast.error('Token was not generated. Please try again.');
+          setIsPublicLinkDialogOpen(false);
+        }
+      } else {
+        console.error('Failed to generate token, response:', data);
+        const errorMsg = Array.isArray(data.error) ? data.error.map((e: any) => e.message || e).join(', ') : (data.error?.message || data.error || 'Failed to generate public token');
+        toast.error(formatErrorMessage(errorMsg, 'Failed to generate public link'));
+        setIsPublicLinkDialogOpen(false);
+      }
+    } catch (error: any) {
+      console.error('Error generating public token:', error);
+      toast.error(formatErrorMessage(error, 'Failed to generate public link'));
+      setIsPublicLinkDialogOpen(false);
+    }
+  };
+
+  const handleShowPublicLink = (requisition: JobRequisition) => {
+    if (requisition.publicToken) {
+      setSelectedRequisition(requisition);
+      setIsPublicLinkDialogOpen(true);
+    } else {
+      handleGeneratePublicToken(requisition);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard!`);
+  };
+
+  const getPublicApiUrl = () => {
+    return typeof window !== 'undefined' ? `${window.location.origin}/api/public/jobs` : '/api/public/jobs';
+  };
+
+  const getWidgetEmbedCode = (token: string) => {
+    const apiUrl = getPublicApiUrl();
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `<div id="job-application-widget" 
+     data-hrms-job-widget 
+     data-job-token="${token}"
+     data-api-url="${apiUrl}">
+</div>
+
+<link rel="stylesheet" href="${baseUrl}/widget/hrms-widget.css">
+<script src="${baseUrl}/widget/hrms-widget.js"></script>`;
   };
 
   const handleEdit = (requisition: JobRequisition) => {
@@ -389,6 +496,14 @@ export default function JobRequisitionsTab() {
                       <TableCell>{req.hiringManagerId?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleShowPublicLink(req)}
+                            title="Public Application Link"
+                          >
+                            <LinkIcon className="h-3 w-3" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -590,6 +705,128 @@ export default function JobRequisitionsTab() {
             </Button>
             <Button onClick={handleUpdate}>Update</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Public Link Dialog */}
+      <Dialog open={isPublicLinkDialogOpen} onOpenChange={setIsPublicLinkDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Public Application Link</DialogTitle>
+            <DialogDescription>
+              Share this link or embed code to allow external candidates to apply for this position
+            </DialogDescription>
+          </DialogHeader>
+          {!selectedRequisition ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">No job requisition selected.</p>
+            </div>
+          ) : selectedRequisition.publicToken ? (
+            <div className="space-y-4">
+              <div>
+                <Label>Public Token</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={selectedRequisition.publicToken}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(selectedRequisition.publicToken!, 'Token')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label>Public Application Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/examples/widget-demo.html?token=${selectedRequisition.publicToken}`}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : ''}/examples/widget-demo.html?token=${selectedRequisition.publicToken}`, 'Application Link')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open(`/examples/widget-demo.html?token=${selectedRequisition.publicToken}`, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Share this link for candidates to apply directly
+                </p>
+              </div>
+
+              <div>
+                <Label>Public API URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${getPublicApiUrl()}/${selectedRequisition.publicToken}`}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${getPublicApiUrl()}/${selectedRequisition.publicToken}`, 'API URL')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  API endpoint for programmatic access
+                </p>
+              </div>
+
+              <div>
+                <Label>Widget Embed Code</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={getWidgetEmbedCode(selectedRequisition.publicToken)}
+                    readOnly
+                    className="font-mono text-xs h-32"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(getWidgetEmbedCode(selectedRequisition.publicToken || ''), 'Embed code')}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Copy this code and paste it into your website HTML to embed the application form
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="font-semibold text-sm mb-2">Instructions:</h4>
+                <ol className="text-xs space-y-1 list-decimal list-inside text-muted-foreground">
+                  <li>Copy the embed code above</li>
+                  <li>Paste it into your website where you want the application form to appear</li>
+                  <li>Make sure to include both the CSS and JavaScript files</li>
+                  <li>Candidates can now apply directly from your website</li>
+                </ol>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground mb-2">Generating public token...</p>
+              <p className="text-sm text-muted-foreground">Please wait while we create your public application link.</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

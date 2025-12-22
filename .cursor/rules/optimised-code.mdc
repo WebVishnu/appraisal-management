@@ -2,6 +2,20 @@
 alwaysApply: true
 ---
 
+1. Always think of the most system-optimized solution before writing code.
+   Understand the problem fully and choose the simplest, most efficient approach.
+
+2. Write the minimum amount of clean, readable, and optimized code.
+   Less code means fewer bugs, easier maintenance, and better scalability.
+
+3. Never create new components, files, or modules immediately.
+   First explore the existing codebase and extend or adjust current structures if possible.
+
+4. Do not duplicate logic.
+   Reuse, refactor, or generalize existing functionality instead of rewriting it.
+
+5. Create something new ONLY when the existing structure cannot logically support the requirement.
+   Every new addition must have a clear, single responsibility and long-term value.
 
 
 

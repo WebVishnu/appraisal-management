@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../auth/[...nextauth]/route';
+import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Employee from '@/lib/models/Employee';
@@ -15,9 +16,10 @@ const changePasswordSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    // Support both mobile JWT tokens and NextAuth sessions
+    const session = await getUserSession(req, auth);
 
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,17 +48,20 @@ export async function POST(req: NextRequest) {
       }
 
       // Authorization checks
-      if (session.user.role === 'employee') {
+      const userRole = session.user.role || '';
+      const userId = session.user.id || '';
+
+      if (userRole === 'employee') {
         // Employee can only change their own password
-        if (targetUserId !== session.user.id) {
+        if (targetUserId !== userId) {
           return NextResponse.json(
             { error: 'You can only change your own password' },
             { status: 403 }
           );
         }
-      } else if (session.user.role === 'manager') {
+      } else if (userRole === 'manager') {
         // Manager can change their own password or team members' passwords
-        if (targetUserId === session.user.id) {
+        if (targetUserId === userId) {
           // Manager changing their own password - verify current password
           if (!validatedData.currentPassword) {
             return NextResponse.json(
@@ -85,7 +90,7 @@ export async function POST(req: NextRequest) {
 
           // Get manager's employee record
           const managerEmployee = await Employee.findOne({
-            email: session.user.email,
+            email: session.user.email || '',
           });
 
           if (!managerEmployee) {
@@ -115,10 +120,10 @@ export async function POST(req: NextRequest) {
             );
           }
         }
-      } else if (session.user.role === 'hr') {
+      } else if (userRole === 'hr') {
         // HR can change any employee's password (including managers)
         // No additional checks needed
-      } else if (session.user.role === 'super_admin') {
+      } else if (userRole === 'super_admin') {
         // Super admin can change anyone's password
         // No additional checks needed
       } else {

@@ -185,6 +185,30 @@ export default function EmployeeDetailsClient() {
   });
   const [employeeUserId, setEmployeeUserId] = useState<string | null>(null);
   
+  // Employee status state
+  const [employeeStatus, setEmployeeStatus] = useState<{
+    attendance: {
+      id: string;
+      checkIn: string | null;
+      checkOut: string | null;
+      workingHours: number | null;
+      isLate: boolean;
+      isEarlyExit: boolean;
+      status: string;
+    } | null;
+    breakSummary: {
+      activeBreak: {
+        id: string;
+        breakType: string;
+        startTime: string;
+        duration: number;
+      } | null;
+      completedBreaks: number;
+      totalBreakTime: number;
+    } | null;
+  } | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  
   const [assignmentFormData, setAssignmentFormData] = useState({
     shiftId: '',
     assignmentType: 'permanent' as 'permanent' | 'temporary',
@@ -203,7 +227,19 @@ export default function EmployeeDetailsClient() {
   useEffect(() => {
     if (params.id) {
       fetchEmployeeDetails(params.id as string);
+      fetchEmployeeStatus(params.id as string);
     }
+  }, [params.id]);
+  
+  // Auto-refresh status every 30 seconds
+  useEffect(() => {
+    if (!params.id) return;
+    
+    const interval = setInterval(() => {
+      fetchEmployeeStatus(params.id as string);
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
   }, [params.id]);
 
   // Check for assignShift search param and open modal
@@ -341,6 +377,23 @@ export default function EmployeeDetailsClient() {
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast.error('Failed to update assignment');
+    }
+  };
+
+  const fetchEmployeeStatus = async (employeeId: string) => {
+    try {
+      setStatusLoading(true);
+      const response = await fetch(`/api/employees/${employeeId}/status`);
+      if (response.ok) {
+        const statusData = await response.json();
+        if (statusData.success && statusData.data) {
+          setEmployeeStatus(statusData.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching employee status:', error);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -606,6 +659,128 @@ export default function EmployeeDetailsClient() {
           )}
         </div>
       </div>
+
+      {/* Current Status Card */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-500" />
+            Current Status
+          </CardTitle>
+          <CardDescription>Today's attendance and break status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {statusLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : employeeStatus ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Attendance Status */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Attendance</p>
+                {employeeStatus.attendance ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      {employeeStatus.attendance.checkOut ? (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Checked Out
+                        </Badge>
+                      ) : employeeStatus.attendance.checkIn ? (
+                        <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Checked In
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Not Checked In
+                        </Badge>
+                      )}
+                      {employeeStatus.attendance.isLate && (
+                        <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
+                          Late
+                        </Badge>
+                      )}
+                      {employeeStatus.attendance.isEarlyExit && (
+                        <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
+                          Early Exit
+                        </Badge>
+                      )}
+                    </div>
+                    {employeeStatus.attendance.checkIn && (
+                      <p className="text-xs text-muted-foreground">
+                        Check In: {new Date(employeeStatus.attendance.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                    {employeeStatus.attendance.checkOut && (
+                      <p className="text-xs text-muted-foreground">
+                        Check Out: {new Date(employeeStatus.attendance.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                    {employeeStatus.attendance.workingHours !== null && employeeStatus.attendance.workingHours !== undefined && (
+                      <p className="text-xs text-muted-foreground">
+                        Working Hours: {(employeeStatus.attendance.workingHours / 60).toFixed(1)}h
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Badge variant="outline">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Not Checked In Today
+                  </Badge>
+                )}
+              </div>
+
+              {/* Break Status */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Break Status</p>
+                {employeeStatus.breakSummary ? (
+                  <div className="space-y-1">
+                    {employeeStatus.breakSummary.activeBreak ? (
+                      <div>
+                        <Badge variant="default" className="bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">
+                          <Clock className="h-3 w-3 mr-1" />
+                          On {employeeStatus.breakSummary.activeBreak.breakType.charAt(0).toUpperCase() + employeeStatus.breakSummary.activeBreak.breakType.slice(1)} Break
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Duration: {employeeStatus.breakSummary.activeBreak.duration} min
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Started: {new Date(employeeStatus.breakSummary.activeBreak.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    ) : (
+                      <Badge variant="outline">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Not on Break
+                      </Badge>
+                    )}
+                    {employeeStatus.breakSummary.completedBreaks > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Completed: {employeeStatus.breakSummary.completedBreaks} break{employeeStatus.breakSummary.completedBreaks > 1 ? 's' : ''} ({employeeStatus.breakSummary.totalBreakTime} min total)
+                      </p>
+                    )}
+                  </div>
+                ) : employeeStatus.attendance ? (
+                  <Badge variant="outline">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    No Breaks Today
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    N/A
+                  </Badge>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No status data available</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* System Flags & Health Indicators (Section 7) - Visible to Manager/HR only */}
       {canViewHealthIndicators && healthIndicators && (

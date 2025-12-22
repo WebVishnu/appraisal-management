@@ -871,45 +871,52 @@ export default function OnboardingFormClient() {
           <CardContent>
             {/* Step Indicator */}
             <div className="mb-4 sm:mb-6">
-              {/* Desktop Step Indicator */}
-              <div className="hidden sm:flex items-center justify-between">
-                {STEPS.map((step, index) => {
-                  const StepIcon = step.icon;
-                  const isActive = index === currentStep;
-                  const isCompleted = submission?.stepsCompleted[step.id as keyof typeof submission.stepsCompleted] || false;
-                  
-                  return (
-                    <div key={step.id} className="flex items-center flex-1">
-                      <div className="flex flex-col items-center flex-1">
-                        <div
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
-                            isActive
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : isCompleted
-                              ? 'border-green-500 bg-green-500 text-white'
-                              : 'border-gray-300 bg-white text-gray-400'
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-4 w-4 sm:h-5 sm:w-5" />
-                          ) : (
-                            <StepIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              {/* Desktop Step Indicator - Scrollable */}
+              <div className="hidden sm:block">
+                <div className="overflow-x-auto -mx-2 px-2 pb-2" style={{ scrollbarWidth: 'thin' }}>
+                  <div className="flex items-center gap-2 min-w-max">
+                    {STEPS.map((step, index) => {
+                      const StepIcon = step.icon;
+                      const isActive = index === currentStep;
+                      const isCompleted = submission?.stepsCompleted[step.id as keyof typeof submission.stepsCompleted] || false;
+                      
+                      return (
+                        <div key={step.id} className="flex items-center flex-shrink-0">
+                          <button
+                            onClick={() => setCurrentStep(index)}
+                            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                                isActive
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : isCompleted
+                                  ? 'border-green-500 bg-green-500 text-white'
+                                  : 'border-gray-300 bg-white text-gray-400'
+                              }`}
+                            >
+                              {isCompleted ? (
+                                <Check className="h-3.5 w-3.5" />
+                              ) : (
+                                <StepIcon className="h-3.5 w-3.5" />
+                              )}
+                            </div>
+                            <span className={`text-[10px] mt-1.5 text-center max-w-[70px] leading-tight ${isActive ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+                              {step.title}
+                            </span>
+                          </button>
+                          {index < STEPS.length - 1 && (
+                            <div
+                              className={`h-0.5 w-8 mx-1 ${
+                                isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                              }`}
+                            />
                           )}
                         </div>
-                        <span className={`text-xs mt-2 text-center ${isActive ? 'font-semibold' : 'text-muted-foreground'}`}>
-                          {step.title}
-                        </span>
-                      </div>
-                      {index < STEPS.length - 1 && (
-                        <div
-                          className={`h-0.5 flex-1 mx-2 ${
-                            isCompleted ? 'bg-green-500' : 'bg-gray-300'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
               
               {/* Mobile Step Indicator */}
@@ -918,7 +925,7 @@ export default function OnboardingFormClient() {
                   <span className="text-xs font-medium text-muted-foreground">
                     Step {currentStep + 1} of {STEPS.length}
                   </span>
-                  <span className="text-xs font-semibold">
+                  <span className="text-xs font-semibold truncate ml-2">
                     {STEPS[currentStep].title}
                   </span>
                 </div>
@@ -929,7 +936,7 @@ export default function OnboardingFormClient() {
                     return (
                       <div
                         key={step.id}
-                        className={`h-1 flex-1 rounded ${
+                        className={`h-1 flex-1 rounded transition-colors ${
                           isActive
                             ? 'bg-primary'
                             : isCompleted

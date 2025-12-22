@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../auth/[...nextauth]/route';
+import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
@@ -8,7 +9,7 @@ import { getAssignedShift, isLateCheckIn } from '@/lib/utils/shift';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

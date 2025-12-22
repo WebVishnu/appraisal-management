@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../auth/[...nextauth]/route';
+import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import WorkReport from '@/lib/models/WorkReport';
 import Employee from '@/lib/models/Employee';
@@ -15,7 +16,7 @@ import mongoose from 'mongoose';
 // GET - Get work reports (role-based)
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
 // POST - Create or submit work report
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getUserSession(req, auth);
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

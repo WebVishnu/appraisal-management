@@ -13,6 +13,15 @@ export interface IAttendance extends Document {
   notes?: string;
   correctedBy?: mongoose.Types.ObjectId; // HR/Admin who made manual correction
   correctedAt?: Date;
+  // Break management fields
+  breaks?: mongoose.Types.ObjectId[]; // Array of BreakSession IDs
+  totalBreakDuration?: number; // Total break time in minutes
+  netWorkingHours?: number; // Working hours excluding unpaid breaks (in minutes)
+  breakViolations?: {
+    exceededDailyLimit?: boolean;
+    excessiveBreaks?: boolean;
+    policyViolations?: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +82,34 @@ const AttendanceSchema = new Schema<IAttendance>(
     correctedAt: {
       type: Date,
       default: null,
+    },
+    // Break management fields
+    breaks: {
+      type: [Schema.Types.ObjectId],
+      ref: 'BreakSession',
+      default: [],
+    },
+    totalBreakDuration: {
+      type: Number,
+      default: 0, // in minutes
+    },
+    netWorkingHours: {
+      type: Number,
+      default: null, // in minutes, calculated
+    },
+    breakViolations: {
+      exceededDailyLimit: {
+        type: Boolean,
+        default: false,
+      },
+      excessiveBreaks: {
+        type: Boolean,
+        default: false,
+      },
+      policyViolations: {
+        type: [String],
+        default: [],
+      },
     },
   },
   {

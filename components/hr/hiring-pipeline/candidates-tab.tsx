@@ -33,6 +33,9 @@ import {
   TrendingUp,
   Calendar,
   Briefcase,
+  ExternalLink,
+  FileText,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { formatDate, formatErrorMessage } from '@/lib/utils/format';
 import { SkeletonCard } from '@/components/shared/skeleton-loader';
@@ -90,6 +93,17 @@ interface Candidate {
     email: string;
   };
   source: string;
+  // Additional fields from widget form
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  currentCompany?: string;
+  currentDesignation?: string;
+  totalExperience?: number;
+  expectedCTC?: number;
+  noticePeriod?: number;
+  resumeUrl?: string;
+  coverLetterUrl?: string;
 }
 
 export default function CandidatesTab() {
@@ -567,37 +581,174 @@ export default function CandidatesTab() {
             <DialogDescription>View complete candidate information</DialogDescription>
           </DialogHeader>
           {selectedCandidate && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Candidate ID</Label>
-                  <p className="font-mono text-sm">{selectedCandidate.candidateId}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Status</Label>
-                  <Badge className={getStatusBadgeClass(selectedCandidate.status as CandidateStatus)}>
-                    {getStatusDisplayName(selectedCandidate.status as CandidateStatus)}
-                  </Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Name</Label>
-                  <p>{selectedCandidate.firstName} {selectedCandidate.lastName}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p>{selectedCandidate.email}</p>
-                </div>
-              </div>
+            <div className="space-y-6">
+              {/* Basic Information */}
               <div>
-                <Label className="text-muted-foreground">Position</Label>
-                <p>{selectedCandidate.jobRequisitionId?.jobTitle || '-'}</p>
+                <h3 className="text-lg font-semibold mb-3">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Candidate ID</Label>
+                    <p className="font-mono text-sm">{selectedCandidate.candidateId}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Status</Label>
+                    <Badge className={getStatusBadgeClass(selectedCandidate.status as CandidateStatus)}>
+                      {getStatusDisplayName(selectedCandidate.status as CandidateStatus)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Name</Label>
+                    <p className="font-medium">{selectedCandidate.firstName} {selectedCandidate.lastName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Email</Label>
+                    <p>{selectedCandidate.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Phone Number</Label>
+                    <p>{selectedCandidate.phoneNumber || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Source</Label>
+                    <p className="capitalize">{selectedCandidate.source?.replace('_', ' ') || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Applied Position</Label>
+                    <p>{selectedCandidate.jobRequisitionId?.jobTitle || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Applied Date</Label>
+                    <p>{formatDate(selectedCandidate.appliedAt)}</p>
+                  </div>
+                </div>
               </div>
+
+              {/* Professional Information */}
+              {(selectedCandidate.currentCompany || selectedCandidate.currentDesignation || selectedCandidate.totalExperience !== undefined) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Professional Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedCandidate.currentCompany && (
+                      <div>
+                        <Label className="text-muted-foreground">Current Company</Label>
+                        <p>{selectedCandidate.currentCompany}</p>
+                      </div>
+                    )}
+                    {selectedCandidate.currentDesignation && (
+                      <div>
+                        <Label className="text-muted-foreground">Current Designation</Label>
+                        <p>{selectedCandidate.currentDesignation}</p>
+                      </div>
+                    )}
+                    {selectedCandidate.totalExperience !== undefined && (
+                      <div>
+                        <Label className="text-muted-foreground">Total Experience</Label>
+                        <p>{selectedCandidate.totalExperience} years</p>
+                      </div>
+                    )}
+                    {selectedCandidate.expectedCTC !== undefined && selectedCandidate.expectedCTC > 0 && (
+                      <div>
+                        <Label className="text-muted-foreground">Expected CTC</Label>
+                        <p>₹{selectedCandidate.expectedCTC.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {selectedCandidate.noticePeriod !== undefined && (
+                      <div>
+                        <Label className="text-muted-foreground">Notice Period</Label>
+                        <p>{selectedCandidate.noticePeriod} days</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Links & Documents */}
+              {(selectedCandidate.linkedinUrl || selectedCandidate.githubUrl || selectedCandidate.portfolioUrl || selectedCandidate.resumeUrl || selectedCandidate.coverLetterUrl) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Links & Documents</h3>
+                  <div className="space-y-2">
+                    {selectedCandidate.resumeUrl && (
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-muted-foreground">Resume:</Label>
+                        <a 
+                          href={selectedCandidate.resumeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          View Resume <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                    {selectedCandidate.coverLetterUrl && (
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-muted-foreground">Cover Letter:</Label>
+                        <a 
+                          href={selectedCandidate.coverLetterUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          View Cover Letter <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                    {selectedCandidate.linkedinUrl && (
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-muted-foreground">LinkedIn:</Label>
+                        <a 
+                          href={selectedCandidate.linkedinUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          {selectedCandidate.linkedinUrl} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                    {selectedCandidate.githubUrl && (
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-muted-foreground">GitHub:</Label>
+                        <a 
+                          href={selectedCandidate.githubUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          {selectedCandidate.githubUrl} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                    {selectedCandidate.portfolioUrl && (
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-muted-foreground">Portfolio:</Label>
+                        <a 
+                          href={selectedCandidate.portfolioUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          {selectedCandidate.portfolioUrl} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Interview Information */}
               {selectedCandidate.overallScore !== undefined && (
                 <div>
-                  <Label className="text-muted-foreground">Overall Score</Label>
-                  <p className="text-lg font-bold">{selectedCandidate.overallScore}%</p>
+                  <h3 className="text-lg font-semibold mb-3">Interview Information</h3>
+                  <div>
+                    <Label className="text-muted-foreground">Overall Score</Label>
+                    <p className="text-lg font-bold">{selectedCandidate.overallScore}%</p>
+                  </div>
                 </div>
               )}
             </div>

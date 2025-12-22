@@ -58,6 +58,11 @@ export interface IJobRequisition extends Document {
     currency: string; // e.g., "INR", "USD"
   };
   
+  // Public application fields
+  publicToken?: string; // Unique token for public access
+  allowPublicApplications: boolean; // Enable/disable public applications
+  publicApplicationDeadline?: Date; // When public applications close
+  
   // Metadata
   createdBy: mongoose.Types.ObjectId; // User who created
   isActive: boolean;
@@ -207,6 +212,20 @@ const JobRequisitionSchema = new Schema<IJobRequisition>(
       max: { type: Number, min: 0 },
       currency: { type: String, default: 'INR', trim: true },
     },
+    publicToken: {
+      type: String,
+      trim: true,
+      sparse: true, // Allows multiple nulls
+      select: false, // Don't select by default for security
+    },
+    allowPublicApplications: {
+      type: Boolean,
+      default: false,
+    },
+    publicApplicationDeadline: {
+      type: Date,
+      default: null,
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -228,6 +247,7 @@ JobRequisitionSchema.index({ status: 1, createdAt: -1 });
 JobRequisitionSchema.index({ department: 1, status: 1 });
 JobRequisitionSchema.index({ hiringManagerId: 1, status: 1 });
 JobRequisitionSchema.index({ recruiterId: 1, status: 1 });
+JobRequisitionSchema.index({ publicToken: 1 }, { sparse: true }); // For public API lookups - sparse to allow multiple nulls
 
 const JobRequisition: Model<IJobRequisition> =
   mongoose.models.JobRequisition ||

@@ -41,6 +41,13 @@ export function generateOfferToken(): string {
 }
 
 /**
+ * Generate a secure random token for public job application link
+ */
+export function generatePublicJobToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
  * Generate offer acceptance link
  */
 export function generateOfferLink(token: string, baseUrl: string = process.env.NEXTAUTH_URL || 'http://localhost:3000'): string {

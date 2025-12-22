@@ -526,64 +526,66 @@ export default function OnboardingDashboardClient() {
         </Card>
       )}
 
-      {/* Statistics Cards */}
-      <div className="grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Invited</CardTitle>
+      {/* Statistics Cards - Compact and Scrollable */}
+      <div className="overflow-x-auto -mx-3 px-3 pb-2" style={{ scrollbarWidth: 'thin' }}>
+        <div className="grid gap-2 sm:gap-3 grid-cols-7 min-w-max">
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Invited</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xl sm:text-2xl font-bold">{counts.invited || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.invited || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">In Progress</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xl sm:text-2xl font-bold">{counts.in_progress || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.in_progress || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Submitted</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Submitted</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{counts.submitted || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.submitted || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Changes Requested</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Changes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{counts.changes_requested || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.changes_requested || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Approved</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{counts.approved || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.approved || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rejected</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Rejected</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{counts.rejected || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.rejected || 0}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+        <Card className="min-w-[100px] sm:min-w-[110px]">
+          <CardHeader className="pb-1.5 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Completed</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{counts.completed || 0}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="text-lg sm:text-xl md:text-2xl font-bold">{counts.completed || 0}</p>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       {/* Filters */}
@@ -667,7 +669,7 @@ export default function OnboardingDashboardClient() {
               {requests.map((request) => (
                 <div
                   key={request._id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  className="border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
                     <div className="flex-1 w-full sm:w-auto">
@@ -684,72 +686,68 @@ export default function OnboardingDashboardClient() {
                             <span className="text-xs">From Hiring</span>
                           </Badge>
                         )}
-                        <span className="text-xs sm:text-sm text-muted-foreground break-all">
+                        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px] sm:max-w-none" title={request.onboardingId}>
                           {request.onboardingId}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-xs sm:text-sm text-muted-foreground">
-                        <div>
-                          <span className="font-medium">Email:</span> {request.email}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Email:</span>
+                          <span className="truncate max-w-[200px]">{request.email}</span>
                         </div>
-                        <div>
-                          <span className="font-medium">Joining:</span> {formatDate(request.dateOfJoining)}
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Joining:</span>
+                          <span>{formatDate(request.dateOfJoining)}</span>
                         </div>
                         {request.department && (
-                          <div>
-                            <span className="font-medium">Department:</span> {request.department}
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Dept:</span>
+                            <span>{request.department}</span>
                           </div>
                         )}
                         {request.designation && (
-                          <div>
-                            <span className="font-medium">Designation:</span> {request.designation}
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Role:</span>
+                            <span className="truncate max-w-[120px]">{request.designation}</span>
                           </div>
                         )}
                         {request.candidate?.candidateId && (
-                          <div>
-                            <span className="font-medium">Candidate ID:</span> {request.candidate.candidateId}
-                          </div>
-                        )}
-                        {request.offer?.offerId && (
-                          <div>
-                            <span className="font-medium">Offer ID:</span> {request.offer.offerId}
-                          </div>
-                        )}
-                        {request.offer?.compensation && (
-                          <div>
-                            <span className="font-medium">CTC:</span> {request.offer.compensation.currency} {request.offer.compensation.annualCTC.toLocaleString()}
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Candidate:</span>
+                            <span className="font-mono text-xs">{request.candidate.candidateId}</span>
                           </div>
                         )}
                       </div>
                       {request.candidate?.jobRequisitionId && (
-                        <div className="mt-2 text-xs sm:text-sm text-muted-foreground">
-                          <span className="font-medium">Position:</span> {request.candidate.jobRequisitionId.jobTitle} ({request.candidate.jobRequisitionId.department})
+                        <div className="mt-1.5 text-xs text-muted-foreground">
+                          <span className="font-medium">Position:</span> {request.candidate.jobRequisitionId.jobTitle}
+                          {request.candidate.jobRequisitionId.department && ` • ${request.candidate.jobRequisitionId.department}`}
                         </div>
                       )}
                       <div className="mt-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Progress:</span>
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 max-w-xs">
+                          <span className="text-xs text-muted-foreground">Progress:</span>
+                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 max-w-[150px] sm:max-w-xs">
                             <div
-                              className="bg-blue-600 h-2 rounded-full transition-all"
+                              className="bg-blue-600 h-1.5 rounded-full transition-all"
                               style={{ width: `${request.progressPercentage}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{request.progressPercentage}%</span>
+                          <span className="text-xs sm:text-sm font-medium">{request.progressPercentage}%</span>
                         </div>
                       </div>
                       {request.rejectionReason && (
-                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm">
-                          <span className="font-medium">Rejection Reason:</span> {request.rejectionReason}
+                        <div className="mt-2 p-1.5 sm:p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs sm:text-sm">
+                          <span className="font-medium">Rejection:</span> <span className="line-clamp-1">{request.rejectionReason}</span>
                         </div>
                       )}
                       {request.changeRequestComments && (
-                        <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-sm">
-                          <span className="font-medium">Change Request:</span> {request.changeRequestComments}
+                        <div className="mt-2 p-1.5 sm:p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs sm:text-sm">
+                          <span className="font-medium">Changes:</span> <span className="line-clamp-1">{request.changeRequestComments}</span>
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto sm:ml-4 flex-wrap">
+                    <div className="flex flex-row gap-1.5 sm:gap-2 w-full sm:w-auto sm:ml-4 flex-wrap sm:flex-nowrap">
                       {(request.candidateId || request.source === 'hiring_pipeline') && (
                         <Button
                           size="sm"
