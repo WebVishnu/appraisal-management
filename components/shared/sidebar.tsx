@@ -22,6 +22,7 @@ import {
   Briefcase,
   DollarSign,
   UserPlus,
+  Wifi,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '@/types';
@@ -44,6 +45,7 @@ const navigation: Record<UserRole, NavItem[]> = {
     { name: 'Employees', href: '/dashboard/hr/employees', icon: Users },
     { name: 'Appraisal Cycles', href: '/dashboard/hr/cycles', icon: Calendar },
     { name: 'Attendance', href: '/dashboard/hr/attendance', icon: Clock },
+    { name: 'WiFi Management', href: '/dashboard/hr/wifi-management', icon: Wifi },
     { name: 'Shift & Roster', href: '/dashboard/hr/shifts', icon: Briefcase },
     { name: 'Leave Management', href: '/dashboard/hr/leave', icon: Plane },
     { name: 'Work Reports', href: '/dashboard/hr/work-reports', icon: ClipboardList },

@@ -22,6 +22,11 @@ export interface IAttendance extends Document {
     excessiveBreaks?: boolean;
     policyViolations?: string[];
   };
+  // WiFi validation fields
+  wifiSSID?: string; // WiFi network name used for check-in
+  wifiBSSID?: string; // WiFi MAC address (if available)
+  wifiValidated: boolean; // Whether WiFi validation passed
+  overrideId?: mongoose.Types.ObjectId; // If attendance was allowed via override
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +115,27 @@ const AttendanceSchema = new Schema<IAttendance>(
         type: [String],
         default: [],
       },
+    },
+    // WiFi validation fields
+    wifiSSID: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    wifiBSSID: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    wifiValidated: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    overrideId: {
+      type: Schema.Types.ObjectId,
+      ref: 'AttendanceOverride',
+      default: null,
     },
   },
   {

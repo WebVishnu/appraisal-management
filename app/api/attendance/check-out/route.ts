@@ -4,6 +4,7 @@ import { getUserSession } from '@/lib/auth-helper';
 import connectDB from '@/lib/mongodb';
 import Attendance from '@/lib/models/Attendance';
 import Employee from '@/lib/models/Employee';
+import AttendanceAttemptLog from '@/lib/models/AttendanceAttemptLog';
 import {
   getStartOfDay,
   getEndOfDay,
@@ -11,6 +12,7 @@ import {
 import { isEarlyCheckOut, calculateWorkingHours } from '@/lib/utils/shift';
 import Shift from '@/lib/models/Shift';
 import { breakService } from '@/lib/services/break-service';
+import { validateWiFiForAttendance } from '@/lib/utils/wifi-validation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,6 +32,35 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
+
+    // Parse request body for WiFi information
+    let wifiData: {
+      wifiSSID?: string;
+      wifiBSSID?: string;
+      isWiFiConnected: boolean;
+      isMobileData: boolean;
+      deviceInfo?: {
+        platform: string;
+        deviceId?: string;
+        appVersion?: string;
+      };
+    } = {
+      isWiFiConnected: false,
+      isMobileData: false,
+    };
+
+    try {
+      const body = await req.json().catch(() => ({}));
+      wifiData = {
+        wifiSSID: body.wifiSSID,
+        wifiBSSID: body.wifiBSSID,
+        isWiFiConnected: body.isWiFiConnected ?? false,
+        isMobileData: body.isMobileData ?? false,
+        deviceInfo: body.deviceInfo,
+      };
+    } catch (error) {
+      // If no body, continue with defaults (web dashboard may not send WiFi data)
+    }
 
     // Verify employee exists and is active
     const employee = await Employee.findOne({ email: session.user.email });
@@ -61,6 +92,60 @@ export async function POST(req: NextRequest) {
         { error: 'Already checked out today' },
         { status: 400 }
       );
+    }
+
+    // Validate WiFi (only for mobile app requests with WiFi data)
+    let wifiValidationResult = null;
+    let overrideId = null;
+
+    if (wifiData.isWiFiConnected !== undefined || wifiData.wifiSSID) {
+      wifiValidationResult = await validateWiFiForAttendance({
+        employeeId: employee._id,
+        wifiSSID: wifiData.wifiSSID,
+        wifiBSSID: wifiData.wifiBSSID,
+        isWiFiConnected: wifiData.isWiFiConnected,
+        isMobileData: wifiData.isMobileData,
+        attemptType: 'check_out',
+        timestamp: now,
+      });
+
+      // Log the attempt
+      await AttendanceAttemptLog.create({
+        employeeId: employee._id,
+        attemptType: 'check_out',
+        status: wifiValidationResult.allowed ? 'success' : 'blocked',
+        wifiSSID: wifiData.wifiSSID,
+        wifiBSSID: wifiData.wifiBSSID,
+        isWiFiConnected: wifiData.isWiFiConnected,
+        isMobileData: wifiData.isMobileData,
+        appliedPolicyId: wifiValidationResult.policyId,
+        policyScope: wifiValidationResult.policyScope,
+        validationResult: {
+          wifiValid: wifiValidationResult.wifiValid,
+          policyApplied: wifiValidationResult.policyApplied,
+          allowed: wifiValidationResult.allowed,
+          reason: wifiValidationResult.reason,
+        },
+        failureReason: wifiValidationResult.allowed ? undefined : 'wifi_not_allowed',
+        failureDetails: wifiValidationResult.allowed ? undefined : wifiValidationResult.reason,
+        overrideId: wifiValidationResult.overrideId,
+        deviceInfo: wifiData.deviceInfo,
+        attemptedAt: now,
+      });
+
+      // If validation failed and no override, block check-out
+      if (!wifiValidationResult.allowed && !wifiValidationResult.overrideId) {
+        return NextResponse.json(
+          {
+            error: 'WiFi validation failed',
+            message: wifiValidationResult.reason,
+            allowedNetworks: wifiValidationResult.allowedNetworks,
+          },
+          { status: 403 }
+        );
+      }
+
+      overrideId = wifiValidationResult.overrideId || undefined;
     }
 
     // Get shift details for validation
@@ -119,6 +204,14 @@ export async function POST(req: NextRequest) {
     attendance.workingHours = workingHours;
     attendance.isEarlyExit = earlyExit;
     attendance.status = status;
+    
+    // Update WiFi information if provided
+    if (wifiData.wifiSSID) {
+      attendance.wifiSSID = wifiData.wifiSSID;
+      attendance.wifiBSSID = wifiData.wifiBSSID;
+      attendance.wifiValidated = wifiValidationResult?.wifiValid ?? false;
+      attendance.overrideId = overrideId;
+    }
     
     // Recalculate working hours considering breaks
     await breakService.updateAttendanceBreakTotals(attendance._id);
